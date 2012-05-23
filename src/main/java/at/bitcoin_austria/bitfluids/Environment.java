@@ -17,19 +17,19 @@ public enum Environment {
     PROD(NetworkParameters.prodNet(), "bitfluids.wallet", "bitfluids.blocks") {
         @Override
         public ECKey getKey200() {
-            throw new UnsupportedOperationException("not implemented");
+            return makePubKey(MTGOX_200_EUR, getNetworkParams());
         }
 
         @Override
         public ECKey getKey150() {
-            throw new UnsupportedOperationException("not implemented");
+            return makePubKey(MTGOX_150_EUR, getNetworkParams());
         }
 
         @Override
         public List<PeerDiscovery> getPeerDiscoveries() {
             return Arrays.asList(
-                    new IrcDiscovery("#bitcoin"),
                     new DnsDiscovery(getNetworkParams()),
+                    new IrcDiscovery("#bitcoin"),
                     new SeedPeers(getNetworkParams()));
 
         }
@@ -72,6 +72,8 @@ public enum Environment {
         return testNet;
     }
 
+    public static final String MTGOX_200_EUR = "184bebdTa792ueyzQxUseXTpvAP5wXNTq1";
+    public static final String MTGOX_150_EUR = "1JLMzJuRZGFm4hzNuWRREZFbE1LhJtvFk";
     public static final String APETERSSON_2_EUR_PUBKEY = "n4d5cP2u1cmBrYEnr7iWVMccnsWyzkLn3T";
     public static final String APETERSSON_1_50_PUBKEY = "mngpA1D7a2xD9M3KP9VjjNrryNp9bWERGA";
 
