@@ -23,7 +23,7 @@ public class TestnetMain {
         testWallet.addKey(new ECKey());
         DlBlockstoreThread dlBlockstoreThread = new DlBlockstoreThread(Environment.TEST, tempBlockStore, testWallet,new TxNotifier() {
             @Override
-            public void onValue(BigInteger amount, ECKey key) {
+            public void onValue(BigInteger satoshis, ECKey key) {
 
             }
         });
