@@ -37,7 +37,7 @@ import android.widget.Toast;
 import com.google.bitcoin.core.*;
 
 public class BitFluidsMainActivity extends Activity {
-    Environment env = Environment.TEST;
+    Environment env = Environment.PROD;
 
     final private Handler uiHandler = new Handler();
 
@@ -283,12 +283,12 @@ public class BitFluidsMainActivity extends Activity {
             if (state.dlBlockstore == null) {
                 state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), wallet,new TxNotifier() {
                     @Override
-                    public void onValue(final BigInteger amount, final ECKey key) {
+                    public void onValue(final BigInteger satoshis, final ECKey key) {
 
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                transactionList.add("recieved: "+amount.toString());
+                                transactionList.add("recieved: "+ satoshis.toString());
                                 if (transactionList.size() > 5) {
                                     transactionList.remove(0);
                                 }

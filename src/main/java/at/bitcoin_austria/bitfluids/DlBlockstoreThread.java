@@ -5,6 +5,8 @@ import com.google.bitcoin.discovery.PeerDiscovery;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.BoundedOverheadBlockStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Arrays;
@@ -20,6 +22,8 @@ class DlBlockstoreThread extends Thread {
     private final Wallet wallet;
     private BlockChain chain;
     private PeerGroup peerGroup;
+
+    final static Logger LOGGER = LoggerFactory.getLogger(DlBlockstoreThread.class);
 
     public DlBlockstoreThread(Environment env, File extFilesDir, Wallet wallet, TxNotifier txNotifier) {
         this.env = env;
@@ -47,19 +51,21 @@ class DlBlockstoreThread extends Thread {
                         byte[] lookingFor = key.getPubKey();
                         List<TransactionOutput> outputs = t.getOutputs();
                         for (TransactionOutput output : outputs) {
-                            Address candAdr;
+                            Address candAdr = null;
                             try {
                                 Script scriptPubKey = output.getScriptPubKey();
                                 candAdr = scriptPubKey.getToAddress();
                             } catch (ScriptException e) {
-                                throw new RuntimeException(e);
+                                LOGGER.info("invalid script in TX id " + t.getHashAsString());
                             }
-                            byte[] candidate = candAdr.getHash160();
-                            if (Arrays.equals(lookingFor, candidate)) {
-                               txNotifier.onValue(output.getValue(),key);
+                            if (candAdr != null) {
+                                byte[] candidate = candAdr.getHash160();
+                                if (Arrays.equals(lookingFor, candidate)) {
+                                    LOGGER.debug("detected relevant transaction!"+output.getValue());
+                                    txNotifier.onValue(output.getValue(), key);
+                                }
                             }
                         }
-
                     }
                 }
             });
