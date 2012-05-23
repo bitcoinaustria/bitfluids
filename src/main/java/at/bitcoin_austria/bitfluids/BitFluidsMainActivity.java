@@ -16,18 +16,6 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
@@ -40,17 +28,21 @@ import android.text.ClipboardManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView;
+import android.widget.*;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
+import com.google.bitcoin.core.NetworkParameters;
+import com.google.bitcoin.core.Transaction;
+import com.google.bitcoin.core.Wallet;
+import com.google.bitcoin.core.WalletEventListener;
 
-import com.google.bitcoin.core.*;
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class BitFluidsMainActivity extends Activity {
     Environment env = Environment.PROD;
@@ -73,6 +65,7 @@ public class BitFluidsMainActivity extends Activity {
     private ImageView qr_nonalk;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private LinkedList<String> transactionList;
+    private PriceService priceService;
 
     BitFluidsActivityState getState() {
         return state;
@@ -188,13 +181,14 @@ public class BitFluidsMainActivity extends Activity {
         }
 
         // first time on UI thread, to see exceptions properly
-        new QueryBtcEur(BitFluidsMainActivity.this).execute();
+        priceService = new PriceService();
+        new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
 
         { // refresh when clicking on the text or button
             OnClickListener refreshClickListener = new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this);
+                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
                     btcEur.execute();
                 }
             };
@@ -206,7 +200,7 @@ public class BitFluidsMainActivity extends Activity {
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this);
+                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
                     btcEur.execute();
                 }
             };
@@ -249,7 +243,7 @@ public class BitFluidsMainActivity extends Activity {
                 @Override
                 public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalange, BigInteger newBalance) {
                     //todo this is not yet fired, for now use a workaround with TxNotifier
-                   /* BigInteger sentToMe = tx.getValueSentToMe(wallet);
+                    /* BigInteger sentToMe = tx.getValueSentToMe(wallet);
                     final String out = Utils.uriDF.format(sentToMe.doubleValue()) + "฿ erhalten";
                     // w/o the uiHandler, it would have been on the wrong thread …
                     uiHandler.post(new Runnable() {
@@ -297,14 +291,16 @@ public class BitFluidsMainActivity extends Activity {
                 }
             }, 5, 60, TimeUnit.SECONDS);
             if (state.dlBlockstore == null) {
-                state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), wallet,new TxNotifier() {
-                    @Override
-                    public void onValue(final BigInteger satoshis, final ECKey key) {
 
+                Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(priceService, env);
+
+                state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), wallet, adapter.convert(new FluidsNotifier() {
+                    @Override
+                    public void onFluidPaid(final FluidType type, final BigDecimal amount) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                transactionList.add("recieved: "+ satoshis.toString());
+                                transactionList.add(type.getDescription() + " " + amount+" Stück");
                                 if (transactionList.size() > 5) {
                                     transactionList.remove(0);
                                 }
@@ -312,7 +308,12 @@ public class BitFluidsMainActivity extends Activity {
                             }
                         });
                     }
-                });
+
+                    @Override
+                    public void onError(String message, FluidType type, BigDecimal bitcoins) {
+
+                    }
+                }));
                 state.dlBlockstore.start();
             }
         }

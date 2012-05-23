@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.List;
 
@@ -63,21 +64,22 @@ class DlBlockstoreThread extends Thread {
             peerGroup.addEventListener(new AbstractPeerEventListener() {
                 @Override
                 public void onTransaction(Peer peer, Transaction t) {
+                    LOGGER.info("checking tx with output to:" + t.getOutputs());
                     for (ECKey key : wallet.getKeys()) {
                         byte[] lookingFor = key.getPubKey();
                         List<TransactionOutput> outputs = t.getOutputs();
                         for (TransactionOutput output : outputs) {
-                            Address candAdr = null;
+                            Address candidateAddress = null;
                             try {
                                 Script scriptPubKey = output.getScriptPubKey();
-                                candAdr = scriptPubKey.getToAddress();
+                                candidateAddress = scriptPubKey.getToAddress();
                             } catch (ScriptException e) {
                                 LOGGER.info("invalid script in TX id " + t.getHashAsString());
                             }
-                            if (candAdr != null) {
-                                byte[] candidate = candAdr.getHash160();
+                            if (candidateAddress != null) {
+                                byte[] candidate = candidateAddress.getHash160();
                                 if (Arrays.equals(lookingFor, candidate)) {
-                                    LOGGER.debug("detected relevant transaction!"+output.getValue());
+                                    LOGGER.debug("detected relevant transaction!" + output.getValue());
                                     txNotifier.onValue(output.getValue(), key);
                                 }
                             }
@@ -93,6 +95,12 @@ class DlBlockstoreThread extends Thread {
             //in our case we are only interested in future transactions.
 //            peerGroup.setFastCatchupTimeSecs(Utils.now().getTime() / 1000);
             peerGroup.addWallet(wallet);
+           /* wallet.addEventListener(new AbstractWalletEventListener() {
+                @Override
+                public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
+                    System.out.println("test!");
+                }
+            }); */
             peerGroup.start();
             peerGroup.downloadBlockChain();
         } catch (BlockStoreException e) {
