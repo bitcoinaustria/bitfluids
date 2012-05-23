@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/base_layout_landscape"
+    android:layout_width="fill_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+
+        <ImageView
+            android:id="@+id/qr_code_alk"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:paddingRight="2dp"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:id="@+id/qr_code_alk_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:textStyle="bold"
+            android:textSize="20dp"
+            android:textColor="@android:color/white"
+            android:text="…" />
+
+        <TextView
+            android:id="@+id/qr_alk_amount_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:text="Choose Amount" />
+
+        <Spinner
+            android:id="@+id/qr_alk_amount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+
+        <ImageView
+            android:id="@+id/qr_code_nonalk"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+            android:paddingRight="2dp"
+            android:scaleType="fitCenter" />
+
+        <TextView
+            android:id="@+id/qr_code_nonalk_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:textStyle="bold"
+            android:textSize="20dp"
+            android:textColor="@android:color/white"
+            android:text="…" />
+
+        <TextView
+            android:id="@+id/qr_nonalk_amount_txt"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:text="Choose Amount" />
+
+        <Spinner
+            android:id="@+id/qr_nonalk_amount"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="1"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/first_line"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="getting data …" />
+
+        <Button
+            android:id="@+id/btn_refresh"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="refresh" />
+
+        <TextView
+            android:id="@+id/first_line"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:text="Recent Transactions" />
+
+        <ListView
+            android:id="@+id/list_view_tx"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+</LinearLayout>

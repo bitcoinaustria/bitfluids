@@ -1,0 +1,13 @@
+bin/*
+.svn
+gen/*
+.settings/org.eclipse.m2e.core.prefs
+.idea/*
+.project
+target/
+.classpath
+project.properties
+ant.properties
+bitfluids.iml
+local.properties
+build.xml
