@@ -35,16 +35,11 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/qr_alk_amount_txt"
+                android:id="@+id/alk_drinks"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="5dp"
-                android:text="Choose Amount" />
-
-            <Spinner
-                android:id="@+id/qr_alk_amount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:text="..." />
         </LinearLayout>
 
         <LinearLayout
@@ -71,16 +66,11 @@
                 android:textStyle="bold" />
 
             <TextView
-                android:id="@+id/qr_nonalk_amount_txt"
+                android:id="@+id/nonalk_drinks"
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:paddingLeft="5dp"
-                android:text="Choose Amount" />
-
-            <Spinner
-                android:id="@+id/qr_nonalk_amount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:text="..." />
         </LinearLayout>
     </LinearLayout>
 

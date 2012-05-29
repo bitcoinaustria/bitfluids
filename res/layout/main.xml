@@ -7,7 +7,7 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:orientation="vertical" >
 
@@ -29,16 +29,12 @@
             android:text="…" />
 
         <TextView
-            android:id="@+id/qr_alk_amount_txt"
+            android:id="@+id/alk_drinks"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:paddingLeft="5dp"
-            android:text="Choose Amount" />
+            android:text="..." />
 
-        <Spinner
-            android:id="@+id/qr_alk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <LinearLayout
@@ -65,16 +61,11 @@
             android:text="…" />
 
         <TextView
-            android:id="@+id/qr_nonalk_amount_txt"
+            android:id="@+id/nonalk_drinks"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:paddingLeft="5dp"
-            android:text="Choose Amount" />
-
-        <Spinner
-            android:id="@+id/qr_nonalk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:text="..." />
     </LinearLayout>
 
     <LinearLayout
@@ -104,7 +95,7 @@
         <ListView
             android:id="@+id/list_view_tx"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1" />
     </LinearLayout>
 
