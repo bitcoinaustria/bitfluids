@@ -75,8 +75,7 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
             text.append("<Error: NULL>");
         }
         text.append("\num ").append(Utils.timeFmt.format(new Date()));
-        final String t = text.toString();
-        activity.getState().txt_view_state = t;
+        activity.getState().txt_view_state = text.toString();
         this.txt_view.setText(text.toString());
     }
 }

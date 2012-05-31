@@ -16,7 +16,7 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import com.google.bitcoin.core.ECKey;
+import com.google.bitcoin.core.Address;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -34,11 +34,11 @@ public class Tx2FluidsAdapter {
     public static final BigDecimal SATOSHIS_PER_BITCOIN = BigDecimal.valueOf(Math.pow(10, 8));
     private final PriceService priceService;
 
-    private final Map<ECKey, FluidType> lookup;
+    private final Map<Address, FluidType> lookup;
 
     public Tx2FluidsAdapter(PriceService priceService, final Environment environment) {
         this.priceService = priceService;
-        lookup = new HashMap<ECKey, FluidType>() {{
+        lookup = new HashMap<Address, FluidType>() {{
             put(environment.getKey200(), FluidType.MATE);
             put(environment.getKey150(), FluidType.COLA);
         }};
@@ -48,15 +48,16 @@ public class Tx2FluidsAdapter {
     public TxNotifier convert(final FluidsNotifier fluidsNotifier) {
         return new TxNotifier() {
             @Override
-            public void onValue(BigInteger satoshis, ECKey key) {
+            public void onValue(BigInteger satoshis, Address key) {
                 FluidType type = lookup.get(key);
                 BigDecimal bitcoins = new BigDecimal(satoshis).divide(SATOSHIS_PER_BITCOIN);
                 try {
                     double price = priceService.getEurQuote();
                     BigDecimal eurPerBitcoin = BigDecimal.valueOf(price);
                     BigDecimal euros = bitcoins.multiply(eurPerBitcoin);
-                    BigDecimal circaAnzahl = euros.divide(eurPerBitcoin);
-                    fluidsNotifier.onFluidPaid(type, circaAnzahl);
+                    BigDecimal euroPrice = BigDecimal.valueOf(type.getEuroPrice());
+                    BigDecimal anzahl = euros.divide(euroPrice);
+                    fluidsNotifier.onFluidPaid(type, anzahl);
                 } catch (RemoteSystemFail remoteSystemFail) {
                     fluidsNotifier.onError(remoteSystemFail.getMessage(), type, bitcoins);
                 }

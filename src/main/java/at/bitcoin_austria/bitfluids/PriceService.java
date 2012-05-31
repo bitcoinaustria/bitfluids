@@ -22,7 +22,6 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,10 +31,16 @@ import java.io.IOException;
 /**
  * @author apetersson
  */
+//todo cache for 10 minutes
 public class PriceService {
 
+    private final HttpClient httpClient;
+
+    public PriceService(HttpClient httpClient) {
+        this.httpClient = httpClient;
+    }
+
     public Double getEurQuote() throws RemoteSystemFail {
-        HttpClient httpClient = new DefaultHttpClient();
         HttpResponse httpResponse;
         HttpGet httpGet = new HttpGet(Utils.MTGOX_BTCEUR);
         try {

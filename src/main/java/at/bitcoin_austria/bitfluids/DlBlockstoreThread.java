@@ -24,10 +24,12 @@ import com.google.bitcoin.store.BoundedOverheadBlockStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.List;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.*;
 
 /**
  * @author schilly
@@ -36,17 +38,32 @@ class DlBlockstoreThread extends Thread {
     private final Environment env;
     private final File extFilesDir;
     private final TxNotifier txNotifier;
-    private final Wallet wallet;
+    private final List<Address> lookingFor;
+
     private BlockChain chain;
     private PeerGroup peerGroup;
 
     final static Logger LOGGER = LoggerFactory.getLogger(DlBlockstoreThread.class);
+    //weakhashSet would be sufficient, but there is no such thing
+    final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
-    public DlBlockstoreThread(Environment env, File extFilesDir, Wallet wallet, TxNotifier txNotifier) {
+    //we keep strong refs to these to surely not double-check
+    final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
+
+    private final AbstractPeerEventListener txProcessListener;
+
+    public DlBlockstoreThread(Environment env, File extFilesDir, TxNotifier txNotifier) {
         this.env = env;
-        this.wallet = wallet;
         this.extFilesDir = extFilesDir;
         this.txNotifier = txNotifier;
+        lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
+        txProcessListener = new AbstractPeerEventListener() {
+            @Override
+            public void onTransaction(Peer peer, Transaction t) {
+                processTransaction(t);
+            }
+        };
+
     }
 
     @Override
@@ -59,32 +76,26 @@ class DlBlockstoreThread extends Thread {
             // "getExternalFilesDir()". also, never store sensitive info
             // there!!!
             blockStore = new BoundedOverheadBlockStore(env.getNetworkParams(), new File(extFilesDir, env.getBlockChainFilename()));
-            chain = new BlockChain(env.getNetworkParams(), wallet, blockStore);
+            chain = new BlockChain(env.getNetworkParams(), blockStore);
             peerGroup = new PeerGroup(env.getNetworkParams(), chain);
+            //connect to localhost for testing for fast block download
+          /*  try {
+                peerGroup.addAddress(new PeerAddress(InetAddress.getLocalHost()));
+                peerGroup.addAddress(new PeerAddress(InetAddress.getByName("192.168.0.199")));
+            } catch (UnknownHostException e) {
+                throw new RuntimeException(e);
+            }*/
+            peerGroup.setMaxConnections(8);
             peerGroup.addEventListener(new AbstractPeerEventListener() {
+
                 @Override
-                public void onTransaction(Peer peer, Transaction t) {
-                    LOGGER.info("checking tx with output to:" + t.getOutputs());
-                    for (ECKey key : wallet.getKeys()) {
-                        byte[] lookingFor = key.getPubKey();
-                        List<TransactionOutput> outputs = t.getOutputs();
-                        for (TransactionOutput output : outputs) {
-                            Address candidateAddress = null;
-                            try {
-                                Script scriptPubKey = output.getScriptPubKey();
-                                candidateAddress = scriptPubKey.getToAddress();
-                            } catch (ScriptException e) {
-                                LOGGER.info("invalid script in TX id " + t.getHashAsString());
-                            }
-                            if (candidateAddress != null) {
-                                byte[] candidate = candidateAddress.getHash160();
-                                if (Arrays.equals(lookingFor, candidate)) {
-                                    LOGGER.debug("detected relevant transaction!" + output.getValue());
-                                    txNotifier.onValue(output.getValue(), key);
-                                }
-                            }
-                        }
-                    }
+                public void onPeerConnected(Peer peer, int peerCount) {
+                    peer.addEventListener(txProcessListener);
+                }
+
+                @Override
+                public void onPeerDisconnected(Peer peer, int peerCount) {
+                    peer.removeEventListener(txProcessListener);
                 }
             });
 
@@ -93,19 +104,68 @@ class DlBlockstoreThread extends Thread {
                 peerGroup.addPeerDiscovery(discovery);
             }
             //in our case we are only interested in future transactions.
-//            peerGroup.setFastCatchupTimeSecs(Utils.now().getTime() / 1000);
-            peerGroup.addWallet(wallet);
-           /* wallet.addEventListener(new AbstractWalletEventListener() {
-                @Override
-                public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
-                    System.out.println("test!");
-                }
-            }); */
+            peerGroup.setFastCatchupTimeSecs(new Date().getTime() / 1000);
             peerGroup.start();
             peerGroup.downloadBlockChain();
         } catch (BlockStoreException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    //synchronized to avoid double incoming TX
+    private synchronized void processTransaction(Transaction t) {
+        Sha256Hash transactionHash = t.getHash();
+        //have seen it, but maybe already forgotten
+        if (isInteresting.get(transactionHash) != null) {
+            return;
+        }
+        //double-check maybe it was already collected and evicted from weakhashmap
+        if (interestingHashes.contains(transactionHash)) {
+            return;
+        }
+        boolean wasInteresting = analyzeTransaction(t);
+        if (wasInteresting) {
+            interestingHashes.add(transactionHash);
+        }
+        isInteresting.put(transactionHash, wasInteresting);
+    }
+
+    private boolean analyzeTransaction(Transaction t) {
+        try {
+            List<TransactionOutput> outputs = t.getOutputs();
+            LOGGER.info("checking tx with output to:" + outputs);
+            boolean wasInteresting = false;
+            for (TransactionOutput output : outputs) {
+                final Address candidateAddress = extractAddress(t, output);
+                if (candidateAddress != null) {
+                    byte[] candidate = candidateAddress.getHash160();
+                    for (Address address : lookingFor) {
+                        if (Arrays.equals(address.getHash160(), candidate)) {
+                            BigInteger satoshis = output.getValue();
+                            LOGGER.debug("detected relevant transaction!" + satoshis);
+                            wasInteresting = true;
+                            txNotifier.onValue(satoshis, address);
+                        }
+                    }
+                }
+            }
+            return wasInteresting;
+        } catch (RuntimeException e) {
+            LOGGER.error("there was an error while looking at a transaction", e);
+            return false;
+        }
+    }
+
+    @Nullable
+    private static Address extractAddress(Transaction t, TransactionOutput output) {
+        Address candidateAddress = null;
+        try {
+            Script scriptPubKey = output.getScriptPubKey();
+            candidateAddress = scriptPubKey.getToAddress();
+        } catch (ScriptException e) {
+            LOGGER.info("invalid script in TX id " + t.getHashAsString());
+        }
+        return candidateAddress;
     }
 
     public String getStatus() {

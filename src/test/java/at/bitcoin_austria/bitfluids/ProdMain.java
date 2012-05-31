@@ -13,59 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package at.bitcoin_austria.bitfluids;
 
-import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.NetworkParameters;
-import com.google.bitcoin.core.Wallet;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.math.BigDecimal;
-import java.math.BigInteger;
-
 /**
- * Created by IntelliJ IDEA.
- * User: Andreas
- * Date: 12.03.12
- * Time: 00:48
+ * @author apetersson
  */
-public class ProdMain {
-    public static final Logger LOGGER = LoggerFactory.getLogger(ProdMain.class);
+public class ProdMain extends NetTest {
 
     public static void main(String[] args) {
-        File tempBlockStore = new File("tempBlockStore");
-        tempBlockStore.mkdirs();
-        Environment thisEnv = Environment.PROD;
-        NetworkParameters testParams = thisEnv.getNetworkParams();
-        Wallet testWallet = new Wallet(testParams);
-        testWallet.addKey(thisEnv.getKey200());
-        testWallet.addKey(thisEnv.getKey150());
-        Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(new PriceService(), thisEnv);
-        TxNotifier notifier = adapter.convert(new FluidsNotifier() {
-            @Override
-            public void onFluidPaid(FluidType type, BigDecimal amount) {
-                LOGGER.info("someone paid for " + amount + " " + type + " ");
-            }
-
-            @Override
-            public void onError(String message, FluidType type, BigDecimal bitcoins) {
-                LOGGER.warn("someone paid for " + bitcoins + " " + type + " ");
-            }
-        });
-        DlBlockstoreThread dlBlockstoreThread = new DlBlockstoreThread(thisEnv, tempBlockStore, testWallet, notifier);
-        dlBlockstoreThread.setDaemon(false);
-        dlBlockstoreThread.start();
-        while (true) {
-            try {
-                Thread.sleep(1000);
-                System.out.println(dlBlockstoreThread.getStatus());
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        new ProdMain().runTest();
     }
 
+    @Override
+    protected Environment getEnvironment() {
+        return Environment.PROD;
+    }
 }
