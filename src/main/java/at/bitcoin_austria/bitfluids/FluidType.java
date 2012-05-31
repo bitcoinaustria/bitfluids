@@ -13,19 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package at.bitcoin_austria.bitfluids;
 
 /**
  * @author apetersson
  */
-public class ProdMain extends NetTest {
+public enum FluidType {
+    MATE(2.0) {
+        @Override
+        public String getDescription() {
+            return "Mate oder Bier";
+        }
+    }, COLA(1.5) {
+        @Override
+        public String getDescription() {
+            return "Cola";
+        }
+    };
+    private final double euroPrice;
 
-    public static void main(String[] args) {
-        new ProdMain().runTest();
+    private FluidType(double euroPrice) {
+        this.euroPrice = euroPrice;
     }
 
-    @Override
-    protected Environment getEnvironment() {
-        return Environment.PROD;
+    public double getEuroPrice() {
+        return euroPrice;
     }
+
+    public abstract String getDescription();
 }

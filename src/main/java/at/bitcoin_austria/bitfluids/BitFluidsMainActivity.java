@@ -16,22 +16,11 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-
 import android.app.Activity;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,17 +29,18 @@ import android.text.ClipboardManager;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.AdapterView;
+import android.widget.*;
 import android.widget.AdapterView.OnItemClickListener;
-import android.widget.ArrayAdapter;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.ListView;
-import android.widget.Spinner;
-import android.widget.TextView;
-import android.widget.Toast;
-
 import com.google.bitcoin.core.*;
+
+import java.io.*;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class BitFluidsMainActivity extends Activity {
     Environment env = Environment.PROD;
@@ -73,6 +63,7 @@ public class BitFluidsMainActivity extends Activity {
     private ImageView qr_nonalk;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private LinkedList<String> transactionList;
+    private PriceService priceService;
 
     BitFluidsActivityState getState() {
         return state;
@@ -188,13 +179,14 @@ public class BitFluidsMainActivity extends Activity {
         }
 
         // first time on UI thread, to see exceptions properly
-        new QueryBtcEur(BitFluidsMainActivity.this).execute();
+        priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
+        new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
 
         { // refresh when clicking on the text or button
             OnClickListener refreshClickListener = new OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this);
+                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
                     btcEur.execute();
                 }
             };
@@ -206,7 +198,7 @@ public class BitFluidsMainActivity extends Activity {
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this);
+                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
                     btcEur.execute();
                 }
             };
@@ -214,64 +206,6 @@ public class BitFluidsMainActivity extends Activity {
         }
 
         { // start background task to listen to incoming TX
-            final NetworkParameters btcNetworkParams = NetworkParameters.testNet();
-            final Wallet wallet = createWallet(btcNetworkParams);
-            // log private keys
-            /*    for (ECKey key : wallet.keychain) {
-                Log.i("KEYS", key.toAddress(btcNetworkParams) + " == " + key.getPrivateKeyEncoded(btcNetworkParams));
-            }*/
-
-            /*  // NOTE: to hardcode the keys, one needs to decode these encoded keys like
-            // this (testnet keys in this case)
-            try {
-              ECKey hardcoded = new DumpedPrivateKey(NetworkParameters.testNet(),
-                  "92YE7WpfwRqFbS3gbTjo5myKq7Z9JuFpoywDmPpT7TsHFL1Dxeg").getKey();
-              if (!"mi7cuBr4s1tuH9A6Z7b7Wn3AW86Zhvoyzy".equals(hardcoded.toAddress(NetworkParameters.testNet()).toString())) {
-                Log.w("KEYS", "test for restoring pub/private key failed");
-              }
-            } catch (AddressFormatException afe) {
-              afe.printStackTrace();
-            }*/
-
-            // we should have two keys in our wallet now
-            state.addr_eur_1_5 = wallet.keychain.get(0).toAddress(btcNetworkParams).toString();
-            state.addr_eur_2_0 = wallet.keychain.get(1).toAddress(btcNetworkParams).toString();
-
-            // show known transactions
-            for (Transaction tx : wallet.getTransactionsByTime()) {
-                BigInteger sentToMe = tx.getValueSentToMe(wallet);
-                String out = Utils.uriDF.format(sentToMe.doubleValue()) + "฿ erhalten";
-                list_view_array.insert(out, 0);
-            }
-
-            wallet.addEventListener(new WalletEventListener() {
-
-                @Override
-                public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalange, BigInteger newBalance) {
-                    //todo this is not yet fired, for now use a workaround with TxNotifier
-                   /* BigInteger sentToMe = tx.getValueSentToMe(wallet);
-                    final String out = Utils.uriDF.format(sentToMe.doubleValue()) + "฿ erhalten";
-                    // w/o the uiHandler, it would have been on the wrong thread …
-                    uiHandler.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            list_view_array.insert(out, 0);
-                        }
-                    });*/
-                }
-
-                @Override
-                public void onCoinsSent(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
-                }
-
-                @Override
-                public void onReorganize(Wallet wallet) {
-                }
-
-                @Override
-                public void onTransactionConfidenceChanged(Wallet wallet, Transaction tx) {
-                }
-            });
 
             scheduler.scheduleAtFixedRate(new Runnable() {
                 @Override
@@ -297,14 +231,16 @@ public class BitFluidsMainActivity extends Activity {
                 }
             }, 5, 60, TimeUnit.SECONDS);
             if (state.dlBlockstore == null) {
-                state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), wallet,new TxNotifier() {
-                    @Override
-                    public void onValue(final BigInteger satoshis, final ECKey key) {
 
+                Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(priceService, env);
+
+                state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), adapter.convert(new FluidsNotifier() {
+                    @Override
+                    public void onFluidPaid(final FluidType type, final BigDecimal amount) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                transactionList.add("recieved: "+ satoshis.toString());
+                                transactionList.add(type.getDescription() + " " + amount+" Stück");
                                 if (transactionList.size() > 5) {
                                     transactionList.remove(0);
                                 }
@@ -312,56 +248,34 @@ public class BitFluidsMainActivity extends Activity {
                             }
                         });
                     }
-                });
+
+                    @Override
+                    public void onError(String message, FluidType type, BigDecimal bitcoins) {
+
+                    }
+                }));
                 state.dlBlockstore.start();
             }
         }
 
         { // click on QR code copies public address (after wallet init!)
             class QrClickListener implements OnClickListener {
-                final private String addr;
+                final private Address addr;
 
-                public QrClickListener(String addr) {
+                public QrClickListener(Address addr) {
                     this.addr = addr;
                 }
 
                 @Override
                 public void onClick(View v) {
-                    copyToClipboard(addr);
+                    copyToClipboard(addr.toString());
                     String t = "Address " + addr + " copied to clipboard.";
                     Toast.makeText(getApplicationContext(), t, Toast.LENGTH_SHORT).show();
                 }
             }
 
-            qr_alk.setOnClickListener(new QrClickListener(state.addr_eur_2_0));
-            qr_nonalk.setOnClickListener(new QrClickListener(state.addr_eur_1_5));
-        }
-    }
-
-    /**
-     * @param btcNetworkParams test or prod
-     * @return get a working wallet
-     */
-    private Wallet createWallet(NetworkParameters btcNetworkParams) {
-        try {
-            File walletFile = new File(env.getWalletFilename());
-            if (walletFile.exists()) {
-                Log.i("KEYS", "restoring wallet from file");
-                FileInputStream wallet_fis = openFileInput(env.getWalletFilename());
-                return Wallet.loadFromFileStream(wallet_fis);
-            } else {
-                Log.w("WALLET", "creating new wallet");
-                final Wallet wallet = new Wallet(btcNetworkParams);
-                wallet.addKey(env.getKey200());
-                wallet.addKey(env.getKey150());
-                FileOutputStream wallet_fos = openFileOutput(env.getWalletFilename(), Context.MODE_PRIVATE);
-                wallet.saveToFileStream(wallet_fos);
-                return wallet;
-            }
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+            qr_alk.setOnClickListener(new QrClickListener(env.getKey200()));
+            qr_nonalk.setOnClickListener(new QrClickListener(env.getKey150()));
         }
     }
 
@@ -386,7 +300,7 @@ public class BitFluidsMainActivity extends Activity {
         */
     }
 
-    private Bitmap drawOneQrCode(int id, int id_txt, double amountBtc, double amountEur, String addr) {
+    private Bitmap drawOneQrCode(int id, int id_txt, double amountBtc, double amountEur, Address addr) {
         String uri = Utils.makeBitcoinUri(addr, amountBtc);
         Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512);
         ImageView qr_image_view = (ImageView) findViewById(id);
@@ -398,11 +312,9 @@ public class BitFluidsMainActivity extends Activity {
     }
 
     void drawQrCodes(double btc1_5, double eur1_5, double btc2_0, double eur2_0) {
-        if (state.addr_eur_1_5 == null)
-            return;
-        state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, state.addr_eur_2_0);
+        state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, env.getKey200());
         state.qr_nonalk_img = drawOneQrCode(R.id.qr_code_nonalk, R.id.qr_code_nonalk_txt, btc1_5, eur1_5,
-                state.addr_eur_1_5);
+                env.getKey150());
     }
 
     final void copyToClipboard(final String txt) {
