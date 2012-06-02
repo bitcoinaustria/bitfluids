@@ -7,14 +7,19 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginLeft="5dip"
+        android:layout_marginTop="5dip"
         android:layout_weight="1"
         android:orientation="vertical" >
 
         <ImageView
             android:id="@+id/qr_code_alk"
-            android:layout_width="150dp"
+            android:layout_width="match_parent"
             android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_margin="5dip"
             android:paddingRight="2dp"
             android:scaleType="fitCenter" />
 
@@ -24,33 +29,37 @@
             android:layout_height="wrap_content"
             android:paddingLeft="5dp"
             android:textStyle="bold"
-            android:textSize="20dp"
+            android:textSize="18dp"
             android:textColor="@android:color/white"
             android:text="…" />
 
         <TextView
-            android:id="@+id/qr_alk_amount_txt"
+            android:id="@+id/alk_drinks"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:textColor="@android:color/white"
             android:paddingLeft="5dp"
-            android:text="Choose Amount" />
+            android:textSize="18dp"
+            android:text="..." />
 
-        <Spinner
-            android:id="@+id/qr_alk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginLeft="5dip"
+        android:layout_marginRight="5dip"
+        android:layout_marginTop="5dip"
         android:layout_weight="1"
         android:orientation="vertical" >
 
         <ImageView
             android:id="@+id/qr_code_nonalk"
-            android:layout_width="150dp"
+            android:layout_width="match_parent"
             android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_margin="5dip"
             android:paddingRight="2dp"
             android:scaleType="fitCenter" />
 
@@ -60,21 +69,18 @@
             android:layout_height="wrap_content"
             android:paddingLeft="5dp"
             android:textStyle="bold"
-            android:textSize="20dp"
+            android:textSize="18dp"
             android:textColor="@android:color/white"
             android:text="…" />
 
         <TextView
-            android:id="@+id/qr_nonalk_amount_txt"
+            android:id="@+id/nonalk_drinks"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:paddingLeft="5dp"
-            android:text="Choose Amount" />
-
-        <Spinner
-            android:id="@+id/qr_nonalk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:textSize="18dp"
+            android:textColor="@android:color/white"
+            android:text="..." />
     </LinearLayout>
 
     <LinearLayout
@@ -104,7 +110,7 @@
         <ListView
             android:id="@+id/list_view_tx"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1" />
     </LinearLayout>
 

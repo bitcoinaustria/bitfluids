@@ -36,20 +36,15 @@ import java.util.Hashtable;
 public class Utils {
     public final static QRCodeWriter QR_CODE_WRITER = new QRCodeWriter();
     public final static String MTGOX_BTCEUR = "https://mtgox.com/api/1/BTCEUR/public/ticker";
+    //todo SDF is not threadsafe, either use joda-time or create a new one each time
     public final static SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss");
-
     public final static DecimalFormat uriDF = new DecimalFormat("0.########");
-    private final static StringBuilder uriSB = new StringBuilder();
     public final static DecimalFormat eurDF = new DecimalFormat("0.00 €");
 
     /**
-     * wrapper for {@link #makeBitcoinUri(String, Double, String)}
-     *
-     * @param addr
-     * @param amount
-     * @return
+     * wrapper for {@link #makeBitcoinUri(Address, Double, String)}
      */
-    final static String makeBitcoinUri(String addr, Double amount) {
+    public static String makeBitcoinUri(Address addr, Double amount) {
         return makeBitcoinUri(addr, amount, null);
     }
 
@@ -65,10 +60,10 @@ public class Utils {
      *
      * @param amount in BTC
      * @param label  the label parameter, could be "null"
-     * @return
+     * @return URI consumable by
      */
-    final static String makeBitcoinUri(String addr, Double amount, String label) {
-        uriSB.setLength(0);
+    public static String makeBitcoinUri(Address addr, Double amount, String label) {
+        StringBuilder uriSB = new StringBuilder();
         uriSB.append("bitcoin:").append(addr).append("?");
         // X8 as part of the number format doesn't work :(
         uriSB.append("amount=").append(uriDF.format(amount)).append("X8");
@@ -77,7 +72,7 @@ public class Utils {
         return uriSB.toString();
     }
 
-    static Bitmap getQRCodeBitmap(final String url, final int size) {
+    public static Bitmap getQRCodeBitmap(final String url, final int size) {
         try {
             final Hashtable<EncodeHintType, Object> hints = new Hashtable<EncodeHintType, Object>();
             hints.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.M);
@@ -103,10 +98,4 @@ public class Utils {
         }
     }
 
-    public static ECKey watchKeyFromString(String input, NetworkParameters params) throws AddressFormatException {
-//        byte[] bytes = Base58.decodeChecked(input);
-        Address address = new Address(params, input);
-        return new ECKey(null, address.getHash160());
-//        return new ECKey(null, bytes);
-    }
 }
