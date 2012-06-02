@@ -185,7 +185,7 @@ public class BitFluidsMainActivity extends Activity {
         }
       };
       findViewById(R.id.first_line).setOnClickListener(refreshClickListener);
-      findViewById(R.id.btn_refresh).setOnClickListener(refreshClickListener);
+      findViewById(R.id.recent_activity).setOnClickListener(refreshClickListener);
     }
 
     { // query mt gox, every 10 minutes

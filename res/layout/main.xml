@@ -95,16 +95,11 @@
             android:layout_height="wrap_content"
             android:text="getting data …" />
 
-        <Button
-            android:id="@+id/btn_refresh"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="refresh" />
-
         <TextView
-            android:id="@+id/first_line"
+            android:id="@+id/recent_activity"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="5dip"
             android:text="Recent Activity" />
 
         <ListView
