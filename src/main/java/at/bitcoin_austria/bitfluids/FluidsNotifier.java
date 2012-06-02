@@ -13,19 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package at.bitcoin_austria.bitfluids;
+
+import java.math.BigDecimal;
 
 /**
  * @author apetersson
  */
-public class ProdMain extends NetTest {
+public interface FluidsNotifier {
 
-    public static void main(String[] args) {
-        new ProdMain().runTest();
-    }
-
-    @Override
-    protected Environment getEnvironment() {
-        return Environment.PROD;
-    }
+    void onFluidPaid(FluidType type,BigDecimal amount);
+    void onError(String message, FluidType type, BigDecimal bitcoins);
 }

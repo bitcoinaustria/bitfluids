@@ -3,6 +3,4 @@
     <string name="app_name">BitFluids</string>
     <string name="alk">mwwJZ9Jp3TSpFkEqr1PVtijB28LRvyjLv1</string>
     <string name="nonalk">mwwJZ9Jp3TSpFkEqr1PVtijB28LRvyjLv1</string>
-    <string name="drinks_alk">Bier, Mate</string>
-    <string name="drinks_nonalk">Limo, Cola, …</string>
 </resources>

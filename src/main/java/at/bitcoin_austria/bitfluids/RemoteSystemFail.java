@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package at.bitcoin_austria.bitfluids;
 
 /**
  * @author apetersson
  */
-public class ProdMain extends NetTest {
+public class RemoteSystemFail extends Exception {
 
-    public static void main(String[] args) {
-        new ProdMain().runTest();
+    public RemoteSystemFail(Throwable throwable) {
+        super(throwable);
     }
 
-    @Override
-    protected Environment getEnvironment() {
-        return Environment.PROD;
+    public RemoteSystemFail(String message) {
+        super(message);
     }
 }

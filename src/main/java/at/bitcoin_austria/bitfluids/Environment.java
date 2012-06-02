@@ -16,29 +16,31 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.AddressFormatException;
-import com.google.bitcoin.core.ECKey;
 import com.google.bitcoin.core.NetworkParameters;
-import com.google.bitcoin.discovery.*;
+import com.google.bitcoin.discovery.DnsDiscovery;
+import com.google.bitcoin.discovery.IrcDiscovery;
+import com.google.bitcoin.discovery.PeerDiscovery;
+import com.google.bitcoin.discovery.SeedPeers;
 
-import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.List;
 
 /**
- * User: Andreas
+ * @author apetersson
  */
 public enum Environment {
 
     PROD(NetworkParameters.prodNet(), "bitfluids.wallet", "bitfluids.blocks") {
         @Override
-        public ECKey getKey200() {
-            return makePubKey(MTGOX_200_EUR, getNetworkParams());
+        public Address getKey200() {
+            return makePubKey(MTGOX_200_EUR);
         }
 
         @Override
-        public ECKey getKey150() {
-            return makePubKey(MTGOX_150_EUR, getNetworkParams());
+        public Address getKey150() {
+            return makePubKey(MTGOX_150_EUR);
         }
 
         @Override
@@ -51,41 +53,27 @@ public enum Environment {
         }
     }, TEST(makeTestNet(), "bitfluids.walletTEST", "bitfluids.blocksTEST") {
         @Override
-        public ECKey getKey200() {
-            return makePubKey(APETERSSON_2_EUR_PUBKEY, getNetworkParams());
+        public Address getKey200() {
+            return makePubKey(APETERSSON_2_EUR_PUBKEY);
         }
 
         @Override
-        public ECKey getKey150() {
-            return makePubKey(APETERSSON_1_50_PUBKEY, getNetworkParams());
+        public Address getKey150() {
+            return makePubKey(APETERSSON_1_50_PUBKEY);
         }
 
         @Override
         public List<PeerDiscovery> getPeerDiscoveries() {
-            /*  PeerDiscovery peerDiscovery = new PeerDiscovery() {
-                @Override
-                public InetSocketAddress[] getPeers() throws PeerDiscoveryException {
-                    InetSocketAddress[] ret = new InetSocketAddress[1];
-                    ret[0] = new InetSocketAddress("192.168.0.199", getNetworkParams().port);
-                    return ret;
-                }
-
-                @Override
-                public void shutdown() {
-                    //To change body of implemented methods use File | Settings | File Templates.
-                }
-            };
-            return Arrays.asList(peerDiscovery);*/
-             return Arrays.asList(
-          new IrcDiscovery("#bitcoinTEST")
-          , new DnsDiscovery(getNetworkParams())
-          , new SeedPeers(getNetworkParams()));
+            //todo add support for testnet3 once its in bitcoinj
+            return Arrays.asList(
+                    new IrcDiscovery("#bitcoinTEST")
+                    , new DnsDiscovery(getNetworkParams())
+                    , new SeedPeers(getNetworkParams()));
         }
     };
 
     private static NetworkParameters makeTestNet() {
-        NetworkParameters testNet = NetworkParameters.testNet();
-        return testNet;
+        return NetworkParameters.testNet();
     }
 
     public static final String MTGOX_200_EUR = "184bebdTa792ueyzQxUseXTpvAP5wXNTq1";
@@ -97,9 +85,9 @@ public enum Environment {
     private final String walletFilename;
     private final String blockChainFilename;
 
-    private static ECKey makePubKey(String pubKey, NetworkParameters params) {
+    protected Address makePubKey(String address) {
         try {
-            return Utils.watchKeyFromString(pubKey, params);
+            return new Address(getNetworkParams(), address);
         } catch (AddressFormatException e) {
             throw new RuntimeException(e);
         }
@@ -116,9 +104,9 @@ public enum Environment {
     }
 
 
-    public abstract ECKey getKey200();
+    public abstract Address getKey200();
 
-    public abstract ECKey getKey150();
+    public abstract Address getKey150();
 
     public String getWalletFilename() {
         return walletFilename;
