@@ -105,7 +105,7 @@
             android:id="@+id/first_line"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Recent Transactions" />
+            android:text="Recent Activity" />
 
         <ListView
             android:id="@+id/list_view_tx"

@@ -208,7 +208,7 @@ public class BitFluidsMainActivity extends Activity {
           new AsyncTask<Void, Void, String>() {
             @Override
             protected void onPostExecute(String s) {
-              transactionList.add(s);
+              transactionList.add(0, s);
               if (transactionList.size() > 50) {
                 transactionList.remove(0);
               }
@@ -219,7 +219,6 @@ public class BitFluidsMainActivity extends Activity {
             protected String doInBackground(Void... voids) {
               String s = state.dlBlockstore.getStatus();
               return s;
-
             }
           }.execute();
         }
@@ -236,7 +235,7 @@ public class BitFluidsMainActivity extends Activity {
                   @Override
                   public void run() {
                     String e = String.format("%.2fx %s", counter, type.getDescription());
-                    transactionList.add(e);
+                    transactionList.add(0, e);
                     if (transactionList.size() > 50) {
                       transactionList.remove(0);
                     }
