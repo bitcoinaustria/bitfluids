@@ -90,7 +90,7 @@ public class BitFluidsMainActivity extends Activity {
       first_line.setText(state.txt_view_state);
     }
     drinks_alk = (TextView) findViewById(R.id.alk_drinks);
-    drinks_nonalk = (TextView) findViewById(R.id.alk_drinks);
+    drinks_nonalk = (TextView) findViewById(R.id.nonalk_drinks);
 
   }
 
@@ -146,7 +146,6 @@ public class BitFluidsMainActivity extends Activity {
       String nonalk = FluidType.COLA.getDescription();
       drinks_alk.setText(alk);
       drinks_nonalk.setText(nonalk);
-
     }
 
     { // size of QR codes should be a bit less than 1/3rd of (longest) screen
