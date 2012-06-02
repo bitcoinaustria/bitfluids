@@ -316,4 +316,13 @@ public class BitFluidsMainActivity extends Activity {
     ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
     clipboard.setText(txt);
   }
+
+  @Override
+  public void onBackPressed() {
+    // stop thread, back button is "stronger" exit than just the home button
+    state.dlBlockstore.interrupt();
+    finish();
+    // TODO or: remove all this to avoid closing the app by pressing the back
+    // button at all.
+  }
 }
