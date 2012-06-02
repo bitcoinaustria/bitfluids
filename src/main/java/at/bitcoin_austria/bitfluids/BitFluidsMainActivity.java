@@ -62,8 +62,7 @@ public class BitFluidsMainActivity extends Activity {
   private BitFluidsActivityState         state;
 
   private TextView                       drinks_nonalk, drinks_alk;
-  private ImageView                      qr_alk;
-  private ImageView                      qr_nonalk;
+  private ImageView                      qr_alk, qr_nonalk;
   private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
   private LinkedList<String>             transactionList;
   private PriceService                   priceService;
@@ -152,7 +151,7 @@ public class BitFluidsMainActivity extends Activity {
       // dimension - the layout default is ok, but this should work better.
       int displayWidth = getWindowManager().getDefaultDisplay().getWidth();
       int displayHeight = getWindowManager().getDefaultDisplay().getHeight();
-      int qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * 0.9);
+      int qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * 0.85);
       LinearLayout.LayoutParams qr_ll = new LinearLayout.LayoutParams(qrSize, qrSize);
       qr_alk.setLayoutParams(qr_ll);
       qr_nonalk.setLayoutParams(qr_ll);
