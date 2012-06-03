@@ -36,7 +36,7 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
     QueryBtcEur(BitFluidsMainActivity activity, PriceService priceService) {
         this.activity = activity;
         this.priceService = priceService;
-        this.txt_view = (TextView) activity.findViewById(R.id.first_line);
+        this.txt_view = (TextView) activity.findViewById(R.id.recent_activity);
     }
 
     @Override

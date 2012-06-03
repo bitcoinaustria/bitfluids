@@ -19,12 +19,10 @@
 
             <ImageView
                 android:id="@+id/qr_code_alk"
-                android:layout_width="match_parent"
+                android:layout_width="150dp"
                 android:layout_height="150dp"
-                android:layout_gravity="center"
-                android:layout_margin="5dip"
                 android:paddingRight="2dp"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter" android:contentDescription="@string/qrcode200"/>
 
             <TextView
                 android:id="@+id/qr_code_alk_txt"
@@ -33,20 +31,9 @@
                 android:paddingLeft="5dp"
                 android:text="…"
                 android:textColor="@android:color/white"
-                android:textSize="18dp"
+                android:textSize="20dp"
                 android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/qr_alk_amount_txt"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
-                android:text="Choose Amount" />
-
-            <Spinner
-                android:id="@+id/qr_alk_amount"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
         </LinearLayout>
 
         <LinearLayout
@@ -60,7 +47,7 @@
                 android:layout_width="150dp"
                 android:layout_height="150dp"
                 android:paddingRight="2dp"
-                android:scaleType="fitCenter" />
+                android:scaleType="fitCenter" android:contentDescription="@string/qrcode150"/>
 
             <TextView
                 android:id="@+id/qr_code_nonalk_txt"
@@ -69,17 +56,8 @@
                 android:paddingLeft="5dp"
                 android:text="…"
                 android:textColor="@android:color/white"
-                android:textSize="18dp"
+                android:textSize="20dp"
                 android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/nonalk_drinks"
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="5dp"
-                android:textColor="@android:color/white"
-                android:textSize="18dp"
-                android:text="..." />
         </LinearLayout>
     </LinearLayout>
 
@@ -89,6 +67,22 @@
         android:layout_weight="1"
         android:orientation="vertical" >
 
+        <TableLayout
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" >
+
+            <TableRow>
+                <TextView android:layout_column="1" android:text="Net" android:padding="3dip"/>
+                <TextView android:layout_column="1" android:text="Exch" android:padding="3dip"/>
+                <TextView android:layout_column="1" android:text="P2P" android:padding="3dip"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/NetStatus"/>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/ExchStatus"/>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/P2PStatus"/>
+            </TableRow>
+            <TableRow></TableRow>
+        </TableLayout>
         <TextView
             android:id="@+id/first_line"
             android:layout_width="fill_parent"
@@ -99,7 +93,6 @@
             android:id="@+id/recent_activity"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dip"
             android:text="Recent Activity" />
 
         <ListView
