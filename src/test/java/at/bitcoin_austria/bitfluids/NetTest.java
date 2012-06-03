@@ -36,20 +36,25 @@ import java.security.cert.X509Certificate;
 /**
  * @author apetersson
  */
-public abstract class NetTest {
-    public static final Logger LOGGER = LoggerFactory.getLogger(NetTest.class);
+abstract class NetTest {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NetTest.class);
 
-    //give an implementation that ignores SSL certs. in standard java the mtgox SSL cert does not validate.
-    public static HttpClient wrapClient(HttpClient base) {
+    // give an implementation that ignores SSL certs. in standard java the mtgox
+    // SSL cert does not validate.
+    private static HttpClient wrapClient(HttpClient base) {
         try {
             SSLContext ctx = SSLContext.getInstance("TLS");
             X509TrustManager tm = new X509TrustManager() {
 
+                @Override
                 public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
                 }
 
+                @Override
                 public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
                 }
+
+                @Override
                 public X509Certificate[] getAcceptedIssuers() {
                     return null;
                 }
@@ -66,7 +71,7 @@ public abstract class NetTest {
         }
     }
 
-    protected final void runTest() {
+    final void runTest() {
         Environment thisEnv = getEnvironment();
         File tempBlockStore = new File(thisEnv.getBlockChainFilename());
         tempBlockStore.mkdirs();
@@ -82,13 +87,18 @@ public abstract class NetTest {
                 LOGGER.warn("someone paid for " + bitcoins + " " + type + " ");
             }
         });
-        DlBlockstoreThread dlBlockstoreThread = new DlBlockstoreThread(thisEnv, tempBlockStore, notifier);
-        dlBlockstoreThread.setDaemon(false);
-        dlBlockstoreThread.start();
+        CasualListener listener = new CasualListener(thisEnv);
+        listener.addNotifier(notifier);
+        listener.addPeerCountListener(new Consumer<Integer>() {
+            @Override
+            public void consume(Integer integer) {
+                System.out.println("i have " + integer + " peers connected...");
+            }
+        });
+
         while (true) {
             try {
                 Thread.sleep(1000);
-                System.out.println(dlBlockstoreThread.getStatus());
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

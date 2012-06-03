@@ -32,7 +32,7 @@ import java.util.List;
  */
 public enum Environment {
 
-    PROD(NetworkParameters.prodNet(), "bitfluids.wallet", "bitfluids.blocks") {
+    PROD(NetworkParameters.prodNet(), "bitfluids.blocks") {
         @Override
         public Address getKey200() {
             return makePubKey(MTGOX_200_EUR);
@@ -51,7 +51,7 @@ public enum Environment {
                     new SeedPeers(getNetworkParams()));
 
         }
-    }, TEST(makeTestNet(), "bitfluids.walletTEST", "bitfluids.blocksTEST") {
+    }, TEST(makeTestNet(), "bitfluids.blocksTEST") {
         @Override
         public Address getKey200() {
             return makePubKey(APETERSSON_2_EUR_PUBKEY);
@@ -76,16 +76,15 @@ public enum Environment {
         return NetworkParameters.testNet();
     }
 
-    public static final String MTGOX_200_EUR = "184bebdTa792ueyzQxUseXTpvAP5wXNTq1";
-    public static final String MTGOX_150_EUR = "1JLMzJuRZGFm4hzNuWRREZFbE1LhJtvFk";
-    public static final String APETERSSON_2_EUR_PUBKEY = "n4d5cP2u1cmBrYEnr7iWVMccnsWyzkLn3T";
-    public static final String APETERSSON_1_50_PUBKEY = "mngpA1D7a2xD9M3KP9VjjNrryNp9bWERGA";
+    private static final String MTGOX_200_EUR = "184bebdTa792ueyzQxUseXTpvAP5wXNTq1";
+    private static final String MTGOX_150_EUR = "1JLMzJuRZGFm4hzNuWRREZFbE1LhJtvFk";
+    private static final String APETERSSON_2_EUR_PUBKEY = "n4d5cP2u1cmBrYEnr7iWVMccnsWyzkLn3T";
+    private static final String APETERSSON_1_50_PUBKEY = "mngpA1D7a2xD9M3KP9VjjNrryNp9bWERGA";
 
     private final NetworkParameters networkParams;
-    private final String walletFilename;
     private final String blockChainFilename;
 
-    protected Address makePubKey(String address) {
+    Address makePubKey(String address) {
         try {
             return new Address(getNetworkParams(), address);
         } catch (AddressFormatException e) {
@@ -93,9 +92,8 @@ public enum Environment {
         }
     }
 
-    private Environment(NetworkParameters networkParams, String walletFilename, String blockChainFilename) {
+    private Environment(NetworkParameters networkParams, String blockChainFilename) {
         this.networkParams = networkParams;
-        this.walletFilename = walletFilename;
         this.blockChainFilename = blockChainFilename;
     }
 
@@ -107,10 +105,6 @@ public enum Environment {
     public abstract Address getKey200();
 
     public abstract Address getKey150();
-
-    public String getWalletFilename() {
-        return walletFilename;
-    }
 
     public abstract List<PeerDiscovery> getPeerDiscoveries();
 

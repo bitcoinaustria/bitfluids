@@ -3,18 +3,23 @@
     android:id="@+id/base_layout_landscape"
     android:layout_width="fill_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal" android:baselineAligned="false">
+    android:orientation="horizontal" >
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginLeft="5dip"
+        android:layout_marginTop="5dip"
         android:layout_weight="1"
         android:orientation="vertical" >
 
         <ImageView
             android:id="@+id/qr_code_alk"
-            android:layout_width="150dp"
+            android:layout_width="match_parent"
             android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_margin="5dip"
             android:paddingRight="2dp"
             android:scaleType="fitCenter" />
 
@@ -24,21 +29,37 @@
             android:layout_height="wrap_content"
             android:paddingLeft="5dp"
             android:textStyle="bold"
-            android:textSize="20dp"
+            android:textSize="18dp"
             android:textColor="@android:color/white"
-            android:text="…"/>
+            android:text="…" />
+
+        <TextView
+            android:id="@+id/alk_drinks"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:textColor="@android:color/white"
+            android:paddingLeft="5dp"
+            android:textSize="18dp"
+            android:text="..." />
+
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="fill_parent"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginLeft="5dip"
+        android:layout_marginRight="5dip"
+        android:layout_marginTop="5dip"
         android:layout_weight="1"
         android:orientation="vertical" >
 
         <ImageView
             android:id="@+id/qr_code_nonalk"
-            android:layout_width="150dp"
+            android:layout_width="match_parent"
             android:layout_height="150dp"
+            android:layout_gravity="center"
+            android:layout_margin="5dip"
             android:paddingRight="2dp"
             android:scaleType="fitCenter" />
 
@@ -48,9 +69,18 @@
             android:layout_height="wrap_content"
             android:paddingLeft="5dp"
             android:textStyle="bold"
-            android:textSize="20dp"
+            android:textSize="18dp"
             android:textColor="@android:color/white"
             android:text="…" />
+
+        <TextView
+            android:id="@+id/nonalk_drinks"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:paddingLeft="5dp"
+            android:textSize="18dp"
+            android:textColor="@android:color/white"
+            android:text="..." />
     </LinearLayout>
 
     <LinearLayout
@@ -58,9 +88,8 @@
         android:layout_height="fill_parent"
         android:layout_weight="1"
         android:orientation="vertical" >
-
         <TableLayout android:layout_width="fill_parent"
-                     android:layout_height="fill_parent"                >
+                     android:layout_height="wrap_content"                >
             <TableRow>
                 <TextView android:layout_column="1" android:text="Net" android:padding="3dip"/>
                 <TextView android:layout_column="1" android:text="Exch" android:padding="3dip"/>
@@ -78,12 +107,19 @@
             android:id="@+id/first_line"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Recent Transactions" />
+            android:text="getting data …" />
+
+        <TextView
+            android:id="@+id/recent_activity"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="5dip"
+            android:text="Recent Activity" />
 
         <ListView
             android:id="@+id/list_view_tx"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1" />
     </LinearLayout>
 

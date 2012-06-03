@@ -9,7 +9,7 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         android:layout_weight="0"
-        android:orientation="horizontal" android:baselineAligned="false">
+        android:orientation="horizontal" >
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -19,10 +19,12 @@
 
             <ImageView
                 android:id="@+id/qr_code_alk"
-                android:layout_width="150dp"
+                android:layout_width="match_parent"
                 android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:layout_margin="5dip"
                 android:paddingRight="2dp"
-                android:scaleType="fitCenter" android:contentDescription="@string/qrcode200"/>
+                android:scaleType="fitCenter" />
 
             <TextView
                 android:id="@+id/qr_code_alk_txt"
@@ -31,9 +33,17 @@
                 android:paddingLeft="5dp"
                 android:text="…"
                 android:textColor="@android:color/white"
-                android:textSize="20dp"
+                android:textSize="18dp"
                 android:textStyle="bold" />
 
+            <TextView
+                android:id="@+id/alk_drinks"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:textColor="@android:color/white"
+                android:textSize="18dp"
+                android:paddingLeft="5dp"
+                android:text="..." />
         </LinearLayout>
 
         <LinearLayout
@@ -44,10 +54,12 @@
 
             <ImageView
                 android:id="@+id/qr_code_nonalk"
-                android:layout_width="150dp"
+                android:layout_width="match_parent"
                 android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:layout_margin="5dip"
                 android:paddingRight="2dp"
-                android:scaleType="fitCenter" android:contentDescription="@string/qrcode150"/>
+                android:scaleType="fitCenter" />
 
             <TextView
                 android:id="@+id/qr_code_nonalk_txt"
@@ -56,8 +68,17 @@
                 android:paddingLeft="5dp"
                 android:text="…"
                 android:textColor="@android:color/white"
-                android:textSize="20dp"
+                android:textSize="18dp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/nonalk_drinks"
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp"
+                android:textColor="@android:color/white"
+                android:textSize="18dp"
+                android:text="..." />
         </LinearLayout>
     </LinearLayout>
 
@@ -67,7 +88,7 @@
         android:layout_weight="1"
         android:orientation="vertical" >
         <TableLayout android:layout_width="fill_parent"
-                     android:layout_height="fill_parent">
+                     android:layout_height="wrap_content"                >
             <TableRow>
                 <TextView android:layout_column="1" android:text="Net" android:padding="3dip"/>
                 <TextView android:layout_column="1" android:text="Exch" android:padding="3dip"/>
@@ -80,6 +101,7 @@
             </TableRow>
             <TableRow></TableRow>
         </TableLayout>
+
         <TextView
             android:id="@+id/first_line"
             android:layout_width="fill_parent"
@@ -87,10 +109,11 @@
             android:text="getting data …" />
 
         <TextView
-            android:id="@+id/first_line"
+            android:id="@+id/recent_activity"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:text="Recent Transactions" />
+            android:layout_marginTop="5dip"
+            android:text="Recent Activity" />
 
         <ListView
             android:id="@+id/list_view_tx"

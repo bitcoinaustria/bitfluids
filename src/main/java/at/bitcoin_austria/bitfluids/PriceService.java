@@ -37,9 +37,9 @@ import java.util.List;
  */
 public class PriceService {
 
-    public static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
-    Double lastResult;
-    long lastTimeChecked;
+    private static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
+    private Double lastResult;
+    private long lastTimeChecked;
 
     private final HttpClient httpClient;
     private final List<Consumer<Status>> lastQuoteListeners;

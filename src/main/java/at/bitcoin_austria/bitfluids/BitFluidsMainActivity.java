@@ -45,7 +45,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class BitFluidsMainActivity extends Activity {
-    Environment env = Environment.PROD;
+    private final Environment env = Environment.PROD;
 
     final private Handler uiHandler = new Handler();
 
@@ -56,7 +56,6 @@ public class BitFluidsMainActivity extends Activity {
     private ListView list_view_tx;
     private ArrayAdapter<String> list_view_array;
 
-    private TextView first_line;
     private BitFluidsActivityState state;
 
     private ImageView qr_alk;
@@ -68,7 +67,7 @@ public class BitFluidsMainActivity extends Activity {
     private final PriceService priceService;
     private final TrafficSignal trafficSignal;
     private final CasualListener bitcoinTransactionListener;
-    BroadcastReceiver netStatusReciever;
+    private BroadcastReceiver netStatusReciever;
 
     public BitFluidsMainActivity() {
         priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
@@ -104,7 +103,7 @@ public class BitFluidsMainActivity extends Activity {
         if (state.qr_nonalk_img == null) {
             qr_nonalk.setImageBitmap(state.qr_nonalk_img);
         }
-        first_line = (TextView) findViewById(R.id.first_line);
+        TextView first_line = (TextView) findViewById(R.id.first_line);
         if (state.txt_view_state != null) {
             first_line.setText(state.txt_view_state);
         }
@@ -118,8 +117,6 @@ public class BitFluidsMainActivity extends Activity {
 
     /**
      * Save the state, this will be passed-in again in {@link #onCreate(Bundle)}
-     *
-     * @return
      */
     @Override
     public Object onRetainNonConfigurationInstance() {
@@ -192,7 +189,7 @@ public class BitFluidsMainActivity extends Activity {
             ExchStatus.setBackgroundColor(unknown);
             P2PStatus.setBackgroundColor(unknown);
             // start background task to singal Status
-            trafficSignal.addNotifier(new TrafficSignalReciever() {
+            netStatusReciever = trafficSignal.addNotifier(new TrafficSignalReciever() {
                 @Override
                 public void onStatusChanged(final SignalType signalType, final Status status) {
                     runOnUiThread(new Runnable() {
@@ -221,12 +218,14 @@ public class BitFluidsMainActivity extends Activity {
 
         {
             // first time on UI thread, to see exceptions properly
+            //noinspection unchecked
             new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
             // query mt gox, every 10 minutes
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
                     QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
+                    //noinspection unchecked
                     btcEur.execute();
                 }
             };
@@ -303,7 +302,7 @@ public class BitFluidsMainActivity extends Activity {
 
     private Bitmap drawOneQrCode(int id, int id_txt, double amountBtc, double amountEur, Address addr) {
         String uri = Utils.makeBitcoinUri(addr, amountBtc);
-        Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512);
+        Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512); //todo is 512 maybe too big?
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
