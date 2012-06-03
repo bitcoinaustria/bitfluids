@@ -2,7 +2,6 @@ lint.xml
 bin/*
 .svn
 gen/*
-.settings/org.eclipse.m2e.core.prefs
 .idea/*
 .project
 target/
