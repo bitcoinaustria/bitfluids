@@ -24,20 +24,31 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * @author schilly
+ * a very lazy implementation of a bitcoin client.
+ * this only checks for broadcasts of bitcoin transactions, not for blocks
+ * and apparently also not for validity of the parent inputs and transactions.
+ * the very basic idea is, that we listen to standard bitcoin-qt nodes,
+ * which typically only broadcast valid transactions.
+ * currently we depend on the first sight of a transaction.
+ * todo:
+ * in the future we will want to check with each and every
+ * of our connected hosts if he considers the TX valid.
+ * or
+ * we will maintain the blockchain ourselves, which means increased startup time and bandwidth.
+ * also less flexibility due to not knowing the deposit public keys.
+ * @author apetersson
  */
-class CasualListener extends Thread {
+public class CasualListener {
     private final Environment env;
-    private final File extFilesDir;
-    private final TxNotifier txNotifier;
     private final List<Address> lookingFor;
+    final List<Consumer<Integer>> peerCountListeners;
 
-//    private BlockChain chain;
+    //    private BlockChain chain;
     private PeerGroup peerGroup;
 
     final static Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
@@ -47,52 +58,54 @@ class CasualListener extends Thread {
     //we keep strong refs to these to surely not double-check
     final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
 
-    private final AbstractPeerEventListener txProcessListener;
 
-    public CasualListener(Environment env, File extFilesDir, TxNotifier txNotifier) {
+    public CasualListener(Environment env) {
+        peerCountListeners = new ArrayList<Consumer<Integer>>();
         this.env = env;
-        this.extFilesDir = extFilesDir;
-        this.txNotifier = txNotifier;
         lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
-        txProcessListener = new AbstractPeerEventListener() {
-            @Override
-            public void onTransaction(Peer peer, Transaction t) {
-                processTransaction(t);
-            }
-        };
-
     }
 
-    @Override
-    public void run() {
-        BlockStore blockStore;
+    public void addNotifier(final TxNotifier txNotifier) {
+        final PeerEventListener txProcessListener = new AbstractPeerEventListener() {
+            @Override
+            public void onTransaction(Peer peer, Transaction t) {
+                processTransaction(t, txNotifier);
+            }
+        };
         try {
-            // we store this on the SD card, in
-            // /Android/data/at.bitcoin_austria..../
-            // there will be an exception wheren there is no
-            // "getExternalFilesDir()". also, never store sensitive info
-            // there!!!
-//            blockStore = new BoundedOverheadBlockStore(env.getNetworkParams(), new File(extFilesDir, env.getBlockChainFilename()));
-//            chain = new BlockChain(env.getNetworkParams(), blockStore);
-            peerGroup = new PeerGroup(env.getNetworkParams(), new BlockChain(env.getNetworkParams(),new DummyBlockStore(env)));
-            //connect to localhost for testing for fast block download
-          /*  try {
-                peerGroup.addAddress(new PeerAddress(InetAddress.getLocalHost()));
-                peerGroup.addAddress(new PeerAddress(InetAddress.getByName("192.168.0.199")));
-            } catch (UnknownHostException e) {
-                throw new RuntimeException(e);
-            }*/
-            peerGroup.setMaxConnections(8);
+            peerGroup = new PeerGroup(env.getNetworkParams(), new BlockChain(env.getNetworkParams(), new DummyBlockStore(env)));
+            final AtomicInteger counter = new AtomicInteger(0);
             peerGroup.addEventListener(new AbstractPeerEventListener() {
+
+                /**
+                 * currently we want to ignore all incoming blocks..
+                 */
+                @Override
+                public Message onPreMessageReceived(Peer peer, Message m) {
+                    if (m instanceof Block){
+                        return null;
+                    }
+                    return m;
+                }
 
                 @Override
                 public void onPeerConnected(Peer peer, int peerCount) {
+                    counter.addAndGet(1);
                     peer.addEventListener(txProcessListener);
+                    runListener();
                 }
 
                 @Override
                 public void onPeerDisconnected(Peer peer, int peerCount) {
+                    counter.addAndGet(-1);
                     peer.removeEventListener(txProcessListener);
+                    runListener();
+                }
+
+                private void runListener() {
+                    for (Consumer<Integer> peerCountListener : peerCountListeners) {
+                        peerCountListener.consume(counter.get());
+                    }
                 }
             });
 
@@ -103,14 +116,13 @@ class CasualListener extends Thread {
             //in our case we are only interested in future transactions.
             peerGroup.setFastCatchupTimeSecs(new Date().getTime() / 1000);
             peerGroup.start();
-//            peerGroup.downloadBlockChain();
         } catch (BlockStoreException e) {
             throw new RuntimeException(e);
         }
     }
 
     //synchronized to avoid double incoming TX
-    private synchronized void processTransaction(Transaction t) {
+    private synchronized void processTransaction(Transaction t, TxNotifier txNotifier) {
         Sha256Hash transactionHash = t.getHash();
         //have seen it, but maybe already forgotten
         if (isInteresting.get(transactionHash) != null) {
@@ -120,17 +132,16 @@ class CasualListener extends Thread {
         if (interestingHashes.contains(transactionHash)) {
             return;
         }
-        boolean wasInteresting = analyzeTransaction(t);
+        boolean wasInteresting = analyzeTransaction(t, txNotifier);
         if (wasInteresting) {
             interestingHashes.add(transactionHash);
         }
         isInteresting.put(transactionHash, wasInteresting);
     }
 
-    private boolean analyzeTransaction(Transaction t) {
+    private boolean analyzeTransaction(Transaction t, TxNotifier txNotifier) {
         try {
             List<TransactionOutput> outputs = t.getOutputs();
-            LOGGER.info("checking tx with output to:" + outputs);
             boolean wasInteresting = false;
             for (TransactionOutput output : outputs) {
                 final Address candidateAddress = extractAddress(t, output);
@@ -165,15 +176,15 @@ class CasualListener extends Thread {
         return candidateAddress;
     }
 
-    public String getStatus() {
-        if (peerGroup != null) {
-            return " peers:" + peerGroup.getConnectedPeers().size();
-        } else {
-            return "not yet initialized";
-        }
+    public void addPeerCountListener(Consumer<Integer> consumer) {
+        peerCountListeners.add(consumer);
     }
 
-    private class DummyBlockStore implements BlockStore {
+    public void shutdown() {
+        peerGroup.stop();
+    }
+
+    private static class DummyBlockStore implements BlockStore {
         final Environment env;
 
         private DummyBlockStore(Environment env) {
@@ -183,12 +194,15 @@ class CasualListener extends Thread {
         @Override
         public void put(StoredBlock block) throws BlockStoreException {
             throw new UnsupportedOperationException("i'm too dumb!");
-            //don't worry bud...
         }
 
         @Override
         public StoredBlock get(Sha256Hash hash) throws BlockStoreException {
-          throw new UnsupportedOperationException("i'm too dumb!");
+ /*           if (hash.equals(env.getNetworkParams().genesisBlock.getHash())){
+                 return new StoredBlock(env.getNetworkParams().genesisBlock,env.getNetworkParams().genesisBlock.getWork(),env.getNetworkParams());
+            }
+            return null;*/
+            throw new UnsupportedOperationException("i'm too dumb!");
         }
 
         @Override

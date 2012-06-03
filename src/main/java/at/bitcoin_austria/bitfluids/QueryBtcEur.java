@@ -39,7 +39,6 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
         this.txt_view = (TextView) activity.findViewById(R.id.first_line);
     }
 
-    //todo this crashes on Android due to SSL cert not verifying. SSL was only recently mandatory on mtgox.
     @Override
     protected Double doInBackground(Void... v) {
         publishProgress("connecting …");
@@ -70,6 +69,7 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
             final double eur1_5 = FluidType.COLA.getEuroPrice() / btceur;
             final double eur2_0 = FluidType.MATE.getEuroPrice()/ btceur;
             text.append("1฿ = ").append(btceur).append("€");
+            //todo draw QR codes in background, this is apparently slow and blocks main thread
             activity.drawQrCodes(eur1_5, FluidType.COLA.getEuroPrice(), eur2_0, FluidType.MATE.getEuroPrice());
         } else {
             text.append("<Error: NULL>");

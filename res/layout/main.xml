@@ -3,7 +3,7 @@
     android:id="@+id/base_layout_landscape"
     android:layout_width="fill_parent"
     android:layout_height="match_parent"
-    android:orientation="horizontal" >
+    android:orientation="horizontal" android:baselineAligned="false">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -26,19 +26,7 @@
             android:textStyle="bold"
             android:textSize="20dp"
             android:textColor="@android:color/white"
-            android:text="…" />
-
-        <TextView
-            android:id="@+id/qr_alk_amount_txt"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="5dp"
-            android:text="Choose Amount" />
-
-        <Spinner
-            android:id="@+id/qr_alk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:text="…"/>
     </LinearLayout>
 
     <LinearLayout
@@ -63,18 +51,6 @@
             android:textSize="20dp"
             android:textColor="@android:color/white"
             android:text="…" />
-
-        <TextView
-            android:id="@+id/qr_nonalk_amount_txt"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:paddingLeft="5dp"
-            android:text="Choose Amount" />
-
-        <Spinner
-            android:id="@+id/qr_nonalk_amount"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
     </LinearLayout>
 
     <LinearLayout
@@ -83,17 +59,20 @@
         android:layout_weight="1"
         android:orientation="vertical" >
 
-        <TextView
-            android:id="@+id/first_line"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="getting data …" />
-
-        <Button
-            android:id="@+id/btn_refresh"
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:text="refresh" />
+        <TableLayout android:layout_width="fill_parent"
+                     android:layout_height="fill_parent"                >
+            <TableRow>
+                <TextView android:layout_column="1" android:text="Net" android:padding="3dip"/>
+                <TextView android:layout_column="1" android:text="Exch" android:padding="3dip"/>
+                <TextView android:layout_column="1" android:text="P2P" android:padding="3dip"/>
+            </TableRow>
+            <TableRow>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/NetStatus"/>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/ExchStatus"/>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/P2PStatus"/>
+            </TableRow>
+            <TableRow></TableRow>
+        </TableLayout>
 
         <TextView
             android:id="@+id/first_line"

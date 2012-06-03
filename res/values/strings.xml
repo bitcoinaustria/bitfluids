@@ -3,4 +3,6 @@
     <string name="app_name">BitFluids</string>
     <string name="alk">mwwJZ9Jp3TSpFkEqr1PVtijB28LRvyjLv1</string>
     <string name="nonalk">mwwJZ9Jp3TSpFkEqr1PVtijB28LRvyjLv1</string>
+    <string name="qrcode150">QR Code 1.5€</string>
+    <string name="qrcode200">QR Code 2.0€</string>
 </resources>

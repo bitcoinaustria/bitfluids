@@ -17,11 +17,12 @@
 package at.bitcoin_austria.bitfluids;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.net.http.AndroidHttpClient;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
@@ -31,12 +32,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
 import android.widget.AdapterView.OnItemClickListener;
-import com.google.bitcoin.core.*;
+import at.bitcoin_austria.bitfluids.trafficSignal.SignalType;
+import at.bitcoin_austria.bitfluids.trafficSignal.Status;
+import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignal;
+import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
+import com.google.bitcoin.core.Address;
 
-import java.io.*;
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -54,8 +56,6 @@ public class BitFluidsMainActivity extends Activity {
     private ListView list_view_tx;
     private ArrayAdapter<String> list_view_array;
 
-    private Spinner alk_dropdown;
-    private Spinner nonalk_dropdown;
     private TextView first_line;
     private BitFluidsActivityState state;
 
@@ -63,11 +63,33 @@ public class BitFluidsMainActivity extends Activity {
     private ImageView qr_nonalk;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private LinkedList<String> transactionList;
-    private PriceService priceService;
+
+    //service dependencies, initialized in constructor, run/shutdown in onCreate onDestroy
+    private final PriceService priceService;
+    private final TrafficSignal trafficSignal;
+    private final CasualListener bitcoinTransactionListener;
+    BroadcastReceiver netStatusReciever;
+
+    public BitFluidsMainActivity() {
+        priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
+        bitcoinTransactionListener = new CasualListener(env);
+        trafficSignal = new TrafficSignal(this, bitcoinTransactionListener, priceService);
+    }
 
     BitFluidsActivityState getState() {
         return state;
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (netStatusReciever != null) {
+            unregisterReceiver(netStatusReciever);
+            netStatusReciever = null;
+        }
+        bitcoinTransactionListener.shutdown();
+    }
+
 
     /**
      * usual binder for ui elements
@@ -82,8 +104,6 @@ public class BitFluidsMainActivity extends Activity {
         if (state.qr_nonalk_img == null) {
             qr_nonalk.setImageBitmap(state.qr_nonalk_img);
         }
-        alk_dropdown = (Spinner) findViewById(R.id.qr_alk_amount);
-        nonalk_dropdown = (Spinner) findViewById(R.id.qr_nonalk_amount);
         first_line = (TextView) findViewById(R.id.first_line);
         if (state.txt_view_state != null) {
             first_line.setText(state.txt_view_state);
@@ -126,7 +146,6 @@ public class BitFluidsMainActivity extends Activity {
             state = new BitFluidsActivityState();
         } else {
             Log.i("STATE", "resuming from known state: " + state);
-            Log.i("STATE", "dlBlockchain: " + state.dlBlockstore.isAlive());
         }
         bind();
 
@@ -135,21 +154,6 @@ public class BitFluidsMainActivity extends Activity {
         { // prevent the display from dimming
             PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
             wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK, "DoNotDimScreen");
-        }
-
-        { // fill dropdown spinners
-            ArrayAdapter<String> spinner_adapter_alk = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item,
-                    new ArrayList<String>(5));
-            ArrayAdapter<String> spinner_adapter_nonalk = new ArrayAdapter<String>(this,
-                    android.R.layout.simple_spinner_item, new ArrayList<String>(5));
-            for (ArrayAdapter<String> adapter : new ArrayAdapter[]{spinner_adapter_alk, spinner_adapter_nonalk}) {
-                for (int i = 1; i <= 5; i++) {
-                    adapter.add(i + "x");
-                }
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-            }
-            alk_dropdown.setAdapter(spinner_adapter_alk);
-            nonalk_dropdown.setAdapter(spinner_adapter_nonalk);
         }
 
         { // size of QR codes should be a bit less than 1/3rd of (longest) screen
@@ -178,23 +182,47 @@ public class BitFluidsMainActivity extends Activity {
             });
         }
 
-        // first time on UI thread, to see exceptions properly
-        priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
-        new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
+        {
+            final TextView NetStatus = (TextView) findViewById(R.id.NetStatus);
+            final TextView ExchStatus = (TextView) findViewById(R.id.ExchStatus);
+            final TextView P2PStatus = (TextView) findViewById(R.id.P2PStatus);
 
-        { // refresh when clicking on the text or button
-            OnClickListener refreshClickListener = new OnClickListener() {
+            int unknown = Color.CYAN;
+            NetStatus.setBackgroundColor(unknown);
+            ExchStatus.setBackgroundColor(unknown);
+            P2PStatus.setBackgroundColor(unknown);
+            // start background task to singal Status
+            trafficSignal.addNotifier(new TrafficSignalReciever() {
                 @Override
-                public void onClick(View v) {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
-                    btcEur.execute();
+                public void onStatusChanged(final SignalType signalType, final Status status) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            switch (signalType) { //switch is generally ugly, perhaps this should move into enum?
+                                case NETWORK:
+                                    NetStatus.setBackgroundColor(status.androidColor);
+                                    break;
+                                case EXCHANGERATE:
+                                    ExchStatus.setBackgroundColor(status.androidColor);
+                                    break;
+                                case PEERS:
+                                    P2PStatus.setBackgroundColor(status.androidColor);
+                                    break;
+                                default:
+                                    throw new IllegalArgumentException("unexpected signal :" + signalType);
+
+                            }
+                        }
+                    });
                 }
-            };
-            findViewById(R.id.first_line).setOnClickListener(refreshClickListener);
-            findViewById(R.id.btn_refresh).setOnClickListener(refreshClickListener);
+            });
         }
 
-        { // query mt gox, every 10 minutes
+
+        {
+            // first time on UI thread, to see exceptions properly
+            new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
+            // query mt gox, every 10 minutes
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
@@ -202,45 +230,18 @@ public class BitFluidsMainActivity extends Activity {
                     btcEur.execute();
                 }
             };
-            scheduler.scheduleAtFixedRate(queryBtcEurTask, 10 * 60, 10 * 60, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(queryBtcEurTask, 10, 10 * 60, TimeUnit.SECONDS);
         }
 
-        { // start background task to listen to incoming TX
-
-            scheduler.scheduleAtFixedRate(new Runnable() {
+        {
+            Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(priceService, env);
+            TxNotifier convert = adapter.convert(new FluidsNotifier() {
                 @Override
-                public void run() {
-                    //noinspection unchecked
-                    new AsyncTask<Void, Void, String>() {
-                        @Override
-                        protected void onPostExecute(String s) {
-                            transactionList.add(s);
-                            if (transactionList.size() > 5) {
-                                transactionList.remove(0);
-                            }
-                            list_view_array.notifyDataSetChanged();
-                        }
-
-                        @Override
-                        protected String doInBackground(Void... voids) {
-                            String s = state.dlBlockstore.getStatus();
-                            return s;
-
-                        }
-                    }.execute();
-                }
-            }, 5, 60, TimeUnit.SECONDS);
-            if (state.dlBlockstore == null) {
-
-                Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(priceService, env);
-
-                state.dlBlockstore = new DlBlockstoreThread(env, getExternalFilesDir(null), adapter.convert(new FluidsNotifier() {
-                    @Override
                     public void onFluidPaid(final FluidType type, final BigDecimal amount) {
                         runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
-                                transactionList.add(type.getDescription() + " " + amount+" Stück");
+                                transactionList.add(type.getDescription() + " " + amount + " Stück");
                                 if (transactionList.size() > 5) {
                                     transactionList.remove(0);
                                 }
@@ -253,10 +254,10 @@ public class BitFluidsMainActivity extends Activity {
                     public void onError(String message, FluidType type, BigDecimal bitcoins) {
 
                     }
-                }));
-                state.dlBlockstore.start();
-            }
+            });
+            bitcoinTransactionListener.addNotifier(convert);
         }
+
 
         { // click on QR code copies public address (after wallet init!)
             class QrClickListener implements OnClickListener {

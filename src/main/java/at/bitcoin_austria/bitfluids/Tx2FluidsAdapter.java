@@ -20,6 +20,7 @@ import com.google.bitcoin.core.Address;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -56,12 +57,17 @@ public class Tx2FluidsAdapter {
                     BigDecimal eurPerBitcoin = BigDecimal.valueOf(price);
                     BigDecimal euros = bitcoins.multiply(eurPerBitcoin);
                     BigDecimal euroPrice = BigDecimal.valueOf(type.getEuroPrice());
-                    BigDecimal anzahl = euros.divide(euroPrice);
+                    BigDecimal anzahl = euros.divide(euroPrice, RoundingMode.HALF_UP);
+                    BigDecimal rounded = BigDecimal.valueOf(anzahl.add(BigDecimal.valueOf(0.5)).longValue());
+                    //is within 2% -> return rounded
+                    double difference = anzahl.subtract(rounded).divide(rounded, RoundingMode.HALF_UP).abs().doubleValue();
+                    if (difference < 0.02) {
+                        anzahl = rounded;
+                    }
                     fluidsNotifier.onFluidPaid(type, anzahl);
                 } catch (RemoteSystemFail remoteSystemFail) {
                     fluidsNotifier.onError(remoteSystemFail.getMessage(), type, bitcoins);
                 }
-
             }
         };
     }

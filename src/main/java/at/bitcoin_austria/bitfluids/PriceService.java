@@ -16,6 +16,7 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import at.bitcoin_austria.bitfluids.trafficSignal.Status;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.StatusLine;
@@ -27,20 +28,32 @@ import org.json.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 /**
  * @author apetersson
  */
-//todo cache for 10 minutes
 public class PriceService {
 
+    public static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
+    Double lastResult;
+    long lastTimeChecked;
+
     private final HttpClient httpClient;
+    private final List<Consumer<Status>> lastQuoteListeners;
 
     public PriceService(HttpClient httpClient) {
+        lastQuoteListeners = new ArrayList<Consumer<Status>>();
         this.httpClient = httpClient;
     }
 
-    public Double getEurQuote() throws RemoteSystemFail {
+    public synchronized Double getEurQuote() throws RemoteSystemFail {
+        if ((lastResult != null) && (new Date().getTime() - lastTimeChecked < TEN_MINUTES_IN_MILLIS)) {
+            notifySuccess();
+            return lastResult;
+        }
         HttpResponse httpResponse;
         HttpGet httpGet = new HttpGet(Utils.MTGOX_BTCEUR);
         try {
@@ -53,10 +66,12 @@ public class PriceService {
 
                 // parse json
                 JSONObject json = new JSONObject(out.toString());
-                // TODO this just looks awkward
+                // TODO this just looks awkward still this is harmless compared to the rest
                 String btc_eur = ((JSONObject) ((JSONObject) json.get("return")).get("avg")).get("value").toString();
-
-                return Double.parseDouble(btc_eur);
+                lastResult = Double.parseDouble(btc_eur);
+                lastTimeChecked = new Date().getTime();
+                notifySuccess();
+                return lastResult;
 
             } else {
                 httpResponse.getEntity().getContent().close();
@@ -64,11 +79,36 @@ public class PriceService {
             }
 
         } catch (ClientProtocolException e) {
+            notifyFailed();
             throw new RemoteSystemFail(e);
         } catch (IOException e) {
+            notifyFailed();
             throw new RemoteSystemFail(e);
         } catch (JSONException e) {
+            notifyFailed();
             throw new RemoteSystemFail(e);
         }
+    }
+
+    private void notifySuccess() {
+        final Status ret;
+        if (lastResult == null || lastResult <= 0) {
+            ret = Status.RED;
+        } else {
+            ret = Status.GREEN;
+        }
+        for (Consumer<Status> listener : lastQuoteListeners) {
+            listener.consume(ret);
+        }
+    }
+
+    private void notifyFailed() {
+        for (Consumer<Status> listener : lastQuoteListeners) {
+            listener.consume(Status.RED);
+        }
+    }
+
+    public void addLastQuoteListener(Consumer<Status> consumer) {
+        lastQuoteListeners.add(consumer);
     }
 }
