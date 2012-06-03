@@ -153,6 +153,7 @@ public class BitFluidsMainActivity extends Activity {
       int displayHeight = getWindowManager().getDefaultDisplay().getHeight();
       int qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * 0.85);
       LinearLayout.LayoutParams qr_ll = new LinearLayout.LayoutParams(qrSize, qrSize);
+      qr_ll.setMargins(5, 5, 5, 5);
       qr_alk.setLayoutParams(qr_ll);
       qr_nonalk.setLayoutParams(qr_ll);
     }

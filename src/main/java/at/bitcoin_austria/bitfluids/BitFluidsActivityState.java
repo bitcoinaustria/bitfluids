@@ -29,7 +29,6 @@ class BitFluidsActivityState {
     Bitmap qr_alk_img;
     String txt_view_state;
     Double btceur;
-    DlBlockstoreThread dlBlockstore;
 
     @Override
     public String toString() {
