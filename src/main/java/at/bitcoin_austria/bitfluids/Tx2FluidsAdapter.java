@@ -25,10 +25,10 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created with IntelliJ IDEA.
- * User: Andreas
- * Date: 23.05.12
- * Time: 18:51
+ * this is an Adapter between a transaction notifier
+ * which is easily providable from bitcoinj and a FluidsNotifier which is needed in the UI code.
+ * does some custom rounding (within 2%) for clearer display for the user..
+ * @author apetersson
  */
 public class Tx2FluidsAdapter {
 

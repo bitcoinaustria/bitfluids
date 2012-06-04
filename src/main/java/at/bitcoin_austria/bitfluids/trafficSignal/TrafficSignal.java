@@ -25,7 +25,7 @@ public  class TrafficSignal {
 
     /**
      * @param trafficSignReciever where you will be notified
-     * @return the BroadcastReceiver to unregister
+     * @return the BroadcastReceiver to unregister by the UI
      */
     public BroadcastReceiver addNotifier(final TrafficSignalReciever trafficSignReciever){
         checkInternet(trafficSignReciever);

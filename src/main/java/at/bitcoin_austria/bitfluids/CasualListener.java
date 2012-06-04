@@ -35,28 +35,29 @@ import java.util.concurrent.atomic.AtomicInteger;
  * the very basic idea is, that we listen to standard bitcoin-qt nodes,
  * which typically only broadcast valid transactions.
  * currently we depend on the first sight of a transaction.
- * todo:
+ * todo 1:
  * in the future we will want to check with each and every
  * of our connected hosts if he considers the TX valid.
  * or
  * we will maintain the blockchain ourselves, which means increased startup time and bandwidth.
  * also less flexibility due to not knowing the deposit public keys.
+ * todo 2: inform UI about changes in confidence (double-spend, more peers seen it, inclusion in block)
  * @author apetersson
  */
 public class CasualListener {
     private final Environment env;
     private final List<Address> lookingFor;
-    final List<Consumer<Integer>> peerCountListeners;
+    private final List<Consumer<Integer>> peerCountListeners;
 
     //    private BlockChain chain;
     private PeerGroup peerGroup;
 
-    final static Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
     //weakhashSet would be sufficient, but there is no such thing
-    final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
+    private final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
     //we keep strong refs to these to surely not double-check
-    final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
+    private final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
 
 
     public CasualListener(Environment env) {
@@ -65,6 +66,12 @@ public class CasualListener {
         lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
     }
 
+    /**
+     * this starts off acitivity in the bitcoin network. (non-blocking)
+     * to stop activity
+     * @see #shutdown()
+     * @param txNotifier callback when a new matching transaction occurs
+     */
     public void addNotifier(final TxNotifier txNotifier) {
         final PeerEventListener txProcessListener = new AbstractPeerEventListener() {
             @Override
@@ -198,10 +205,6 @@ public class CasualListener {
 
         @Override
         public StoredBlock get(Sha256Hash hash) throws BlockStoreException {
- /*           if (hash.equals(env.getNetworkParams().genesisBlock.getHash())){
-                 return new StoredBlock(env.getNetworkParams().genesisBlock,env.getNetworkParams().genesisBlock.getWork(),env.getNetworkParams());
-            }
-            return null;*/
             throw new UnsupportedOperationException("i'm too dumb!");
         }
 

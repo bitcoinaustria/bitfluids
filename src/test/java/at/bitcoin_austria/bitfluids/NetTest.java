@@ -16,15 +16,6 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import java.io.File;
-import java.math.BigDecimal;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-
 import org.apache.http.client.HttpClient;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.Scheme;
@@ -33,6 +24,14 @@ import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import java.io.File;
+import java.math.BigDecimal;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 
 /**
  * @author apetersson
@@ -88,13 +87,11 @@ public abstract class NetTest {
         LOGGER.warn("someone paid for " + bitcoins + " " + type + " ");
       }
     });
-    DlBlockstoreThread dlBlockstoreThread = new DlBlockstoreThread(thisEnv, tempBlockStore, notifier);
-    dlBlockstoreThread.setDaemon(false);
-    dlBlockstoreThread.start();
-    while (true) {
+      CasualListener listener = new CasualListener(thisEnv);
+      listener.addNotifier(notifier);
+      while (true) {
       try {
-        Thread.sleep(1000);
-        System.out.println(dlBlockstoreThread.getStatus());
+          Thread.sleep(1000);
       } catch (InterruptedException e) {
         throw new RuntimeException(e);
       }
