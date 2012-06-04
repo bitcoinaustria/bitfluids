@@ -39,13 +39,14 @@ import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class BitFluidsMainActivity extends Activity {
-    Environment env = Environment.PROD;
+    private final Environment env = Environment.PROD;
 
     final private Handler uiHandler = new Handler();
 
@@ -56,7 +57,6 @@ public class BitFluidsMainActivity extends Activity {
     private ListView list_view_tx;
     private ArrayAdapter<String> list_view_array;
 
-    private TextView first_line;
     private BitFluidsActivityState state;
 
     private ImageView qr_alk;
@@ -68,7 +68,7 @@ public class BitFluidsMainActivity extends Activity {
     private final PriceService priceService;
     private final TrafficSignal trafficSignal;
     private final CasualListener bitcoinTransactionListener;
-    BroadcastReceiver netStatusReciever;
+    private BroadcastReceiver netStatusReciever;
 
     public BitFluidsMainActivity() {
         priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
@@ -104,7 +104,7 @@ public class BitFluidsMainActivity extends Activity {
         if (state.qr_nonalk_img == null) {
             qr_nonalk.setImageBitmap(state.qr_nonalk_img);
         }
-        first_line = (TextView) findViewById(R.id.first_line);
+        TextView first_line = (TextView) findViewById(R.id.first_line);
         if (state.txt_view_state != null) {
             first_line.setText(state.txt_view_state);
         }
@@ -118,8 +118,6 @@ public class BitFluidsMainActivity extends Activity {
 
     /**
      * Save the state, this will be passed-in again in {@link #onCreate(Bundle)}
-     *
-     * @return
      */
     @Override
     public Object onRetainNonConfigurationInstance() {
@@ -191,7 +189,7 @@ public class BitFluidsMainActivity extends Activity {
             ExchStatus.setBackgroundColor(unknown);
             P2PStatus.setBackgroundColor(unknown);
             // start background task to singal Status
-            trafficSignal.addNotifier(new TrafficSignalReciever() {
+            netStatusReciever = trafficSignal.addNotifier(new TrafficSignalReciever() {
                 @Override
                 public void onStatusChanged(final SignalType signalType, final Status status) {
                     runOnUiThread(new Runnable() {
@@ -220,12 +218,14 @@ public class BitFluidsMainActivity extends Activity {
 
         {
             // first time on UI thread, to see exceptions properly
+            //noinspection unchecked
             new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
             // query mt gox, every 10 minutes
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
                     QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
+                    //noinspection unchecked
                     btcEur.execute();
                 }
             };
@@ -300,21 +300,24 @@ public class BitFluidsMainActivity extends Activity {
         */
     }
 
-    private Bitmap drawOneQrCode(int id, int id_txt, double amountBtc, double amountEur, Address addr) {
-        String uri = Utils.makeBitcoinUri(addr, amountBtc);
-        Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512);
+    private Bitmap drawOneQrCode(int id, int id_txt, BigInteger amountBtc, double amountEur, Address addr, String label) {
+        String uri = Utils.makeBitcoinUri(addr, amountBtc,label);
+        Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512); //todo is 512 maybe too big?
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
-        String txt = Utils.uriDF.format(amountBtc) + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
+        double value = amountBtc.doubleValue() / Utils.SATOSHIS_PER_BITCOIN.doubleValue();
+        String txt = Utils.uriDF.format(value) + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
         qr_txt.setText(txt);
         return qr_bitmap;
     }
 
-    void drawQrCodes(double btc1_5, double eur1_5, double btc2_0, double eur2_0) {
-        state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, env.getKey200());
+    void drawQrCodes(BigInteger btc1_5, double eur1_5, BigInteger btc2_0, double eur2_0) {
+        String label200 = "Bitfluids " + FluidType.MATE.getDescription();
+        String label150 = "Bitfluids " + FluidType.COLA.getDescription();
+        state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, env.getKey200(), label200);
         state.qr_nonalk_img = drawOneQrCode(R.id.qr_code_nonalk, R.id.qr_code_nonalk_txt, btc1_5, eur1_5,
-                env.getKey150());
+                env.getKey150(), label150);
     }
 
     final void copyToClipboard(final String txt) {

@@ -29,6 +29,8 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Hashtable;
@@ -40,13 +42,7 @@ public class Utils {
     public final static SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss");
     public final static DecimalFormat uriDF = new DecimalFormat("0.########");
     public final static DecimalFormat eurDF = new DecimalFormat("0.00 €");
-
-    /**
-     * wrapper for {@link #makeBitcoinUri(Address, Double, String)}
-     */
-    public static String makeBitcoinUri(Address addr, Double amount) {
-        return makeBitcoinUri(addr, amount, null);
-    }
+    public static final BigDecimal SATOSHIS_PER_BITCOIN = BigDecimal.valueOf(Math.pow(10, 8));
 
     /**
      * we aim for the first example at <a
@@ -62,11 +58,11 @@ public class Utils {
      * @param label  the label parameter, could be "null"
      * @return URI consumable by
      */
-    public static String makeBitcoinUri(Address addr, Double amount, String label) {
+    public static String makeBitcoinUri(Address addr, BigInteger amount, String label) {
         StringBuilder uriSB = new StringBuilder();
         uriSB.append("bitcoin:").append(addr).append("?");
         // X8 as part of the number format doesn't work :(
-        uriSB.append("amount=").append(uriDF.format(amount)).append("X8");
+        uriSB.append("amount=").append(uriDF.format((amount.doubleValue() / Utils.SATOSHIS_PER_BITCOIN.doubleValue())));
         if (label != null)
             uriSB.append("?").append("label=").append(label);
         return uriSB.toString();

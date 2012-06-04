@@ -32,7 +32,6 @@ import java.util.Map;
  */
 public class Tx2FluidsAdapter {
 
-    public static final BigDecimal SATOSHIS_PER_BITCOIN = BigDecimal.valueOf(Math.pow(10, 8));
     private final PriceService priceService;
 
     private final Map<Address, FluidType> lookup;
@@ -51,7 +50,7 @@ public class Tx2FluidsAdapter {
             @Override
             public void onValue(BigInteger satoshis, Address key) {
                 FluidType type = lookup.get(key);
-                BigDecimal bitcoins = new BigDecimal(satoshis).divide(SATOSHIS_PER_BITCOIN);
+                BigDecimal bitcoins = new BigDecimal(satoshis).divide(Utils.SATOSHIS_PER_BITCOIN);
                 try {
                     double price = priceService.getEurQuote();
                     BigDecimal eurPerBitcoin = BigDecimal.valueOf(price);

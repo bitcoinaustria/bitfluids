@@ -19,6 +19,7 @@ package at.bitcoin_austria.bitfluids;
 import android.os.AsyncTask;
 import android.widget.TextView;
 
+import java.math.BigInteger;
 import java.util.Date;
 
 /**
@@ -66,8 +67,10 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
         StringBuilder text = new StringBuilder();
         if (btceur != null) {
             activity.getState().btceur = btceur;
-            final double eur1_5 = FluidType.COLA.getEuroPrice() / btceur;
-            final double eur2_0 = FluidType.MATE.getEuroPrice()/ btceur;
+            long price150 = (long) (Utils.SATOSHIS_PER_BITCOIN.longValue() * FluidType.COLA.getEuroPrice() / btceur);
+            long price200 = (long) (Utils.SATOSHIS_PER_BITCOIN.longValue() * FluidType.MATE.getEuroPrice() / btceur);
+            final BigInteger eur1_5 = BigInteger.valueOf(price150);
+            final BigInteger eur2_0 = BigInteger.valueOf(price200);
             text.append("1฿ = ").append(btceur).append("€");
             //todo draw QR codes in background, this is apparently slow and blocks main thread
             activity.drawQrCodes(eur1_5, FluidType.COLA.getEuroPrice(), eur2_0, FluidType.MATE.getEuroPrice());

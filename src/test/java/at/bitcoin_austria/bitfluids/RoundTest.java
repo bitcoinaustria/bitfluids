@@ -16,7 +16,7 @@ public class RoundTest {
 
     @Test
     public void roundTest() {
-        BigDecimal satoshis = BigDecimal.valueOf(FluidType.MATE.getEuroPrice() / EUR_PRICE).multiply(BigDecimal.valueOf(Math.pow(10, 8)));
+        BigDecimal satoshis = BigDecimal.valueOf(FluidType.MATE.getEuroPrice() / EUR_PRICE).multiply(Utils.SATOSHIS_PER_BITCOIN);
         testRounding(1.0, satoshis);
         testRounding(1.03, satoshis.multiply(BigDecimal.valueOf(1.03)), 0.0000001);
         testRounding(1.0, satoshis.multiply(BigDecimal.valueOf(1.01)));
