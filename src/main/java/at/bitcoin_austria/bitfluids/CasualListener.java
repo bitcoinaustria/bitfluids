@@ -45,6 +45,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author apetersson
  */
 public class CasualListener {
+    public static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
+    public static final int MILLIS_PER_MINUTE = 1000 * 60;
     private final Environment env;
     private final List<Address> lookingFor;
     private final List<Consumer<Integer>> peerCountListeners;
@@ -52,18 +54,26 @@ public class CasualListener {
     //    private BlockChain chain;
     private PeerGroup peerGroup;
 
-    private final static Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
     //weakhashSet would be sufficient, but there is no such thing
     private final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
     //we keep strong refs to these to surely not double-check
     private final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
 
+    TreeSet<Long> transactionTimes = new TreeSet<Long>();
+    private final long startupTime;
+    private Stats stats;
 
     public CasualListener(Environment env) {
         peerCountListeners = new ArrayList<Consumer<Integer>>();
         this.env = env;
         lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
+        startupTime = new Date().getTime();
+    }
+
+    public void setStatsNotifier(Stats stats) {
+        this.stats = stats;
     }
 
     /**
@@ -140,10 +150,32 @@ public class CasualListener {
             return;
         }
         boolean wasInteresting = analyzeTransaction(t, txNotifier);
+        updateStats();
         if (wasInteresting) {
             interestingHashes.add(transactionHash);
         }
         isInteresting.put(transactionHash, wasInteresting);
+    }
+
+
+    private void updateStats() {
+        long now = new Date().getTime();
+        transactionTimes.add(now);
+        Iterator<Long> iterator = transactionTimes.iterator();
+        while (iterator.hasNext()) {
+            Long time = iterator.next();
+            if (now - time > TIMEFRAME_MILLIS) {
+                iterator.remove();
+            } else {
+                break;
+            }
+        }
+        long runtime = now - startupTime;
+        double runtimeMinutes = Math.min(runtime, TIMEFRAME_MILLIS) / (double) MILLIS_PER_MINUTE;
+        double tpm = transactionTimes.size() / runtimeMinutes;
+        if (stats != null) {
+            stats.update(tpm);
+        }
     }
 
     private boolean analyzeTransaction(Transaction t, TxNotifier txNotifier) {

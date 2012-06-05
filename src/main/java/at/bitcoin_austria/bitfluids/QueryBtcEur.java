@@ -67,8 +67,8 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
         StringBuilder text = new StringBuilder();
         if (btceur != null) {
             activity.getState().btceur = btceur;
-            long price150 = (long) (Utils.SATOSHIS_PER_BITCOIN.longValue() * FluidType.COLA.getEuroPrice() / btceur);
-            long price200 = (long) (Utils.SATOSHIS_PER_BITCOIN.longValue() * FluidType.MATE.getEuroPrice() / btceur);
+            long price150 = (long) (Utils.SATOSHIS_PER_BITCOIN * FluidType.COLA.getEuroPrice() / btceur);
+            long price200 = (long) (Utils.SATOSHIS_PER_BITCOIN * FluidType.MATE.getEuroPrice() / btceur);
             final BigInteger eur1_5 = BigInteger.valueOf(price150);
             final BigInteger eur2_0 = BigInteger.valueOf(price200);
             text.append("1฿ = ").append(btceur).append("€");

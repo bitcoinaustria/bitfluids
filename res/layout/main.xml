@@ -67,11 +67,13 @@
                 <TextView android:layout_column="1" android:text="Net" android:padding="3dip"/>
                 <TextView android:layout_column="1" android:text="Exch" android:padding="3dip"/>
                 <TextView android:layout_column="1" android:text="P2P" android:padding="3dip"/>
+                <TextView android:layout_column="1" android:text="TPM" android:padding="3dip"/>
             </TableRow>
             <TableRow>
                 <TextView android:layout_column="1" android:text="" android:id="@+id/NetStatus"/>
                 <TextView android:layout_column="1" android:text="" android:id="@+id/ExchStatus"/>
                 <TextView android:layout_column="1" android:text="" android:id="@+id/P2PStatus"/>
+                <TextView android:layout_column="1" android:text="" android:id="@+id/TPS"/>
             </TableRow>
             <TableRow></TableRow>
         </TableLayout>

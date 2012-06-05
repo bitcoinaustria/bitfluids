@@ -40,6 +40,7 @@ import com.google.bitcoin.core.Address;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -48,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 public class BitFluidsMainActivity extends Activity {
     private final Environment env = Environment.PROD;
 
-    final private Handler uiHandler = new Handler();
+    private final Handler uiHandler = new Handler();
 
     // wake lock for preventing the screen from sleeping
     private PowerManager.WakeLock wakeLock;
@@ -72,6 +73,7 @@ public class BitFluidsMainActivity extends Activity {
 
     public BitFluidsMainActivity() {
         priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
+        //todo idea: render a fancy scrolling graph for this
         bitcoinTransactionListener = new CasualListener(env);
         trafficSignal = new TrafficSignal(this, bitcoinTransactionListener, priceService);
     }
@@ -255,12 +257,24 @@ public class BitFluidsMainActivity extends Activity {
                     }
             });
             bitcoinTransactionListener.addNotifier(convert);
+            final TextView TpsText = (TextView) findViewById(R.id.TPS);
+            bitcoinTransactionListener.setStatsNotifier(new Stats() {
+                @Override
+                public void update(final double tpm) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            TpsText.setText(new DecimalFormat("#.0").format(tpm));
+                        }
+                    });
+                }
+            });
         }
 
 
         { // click on QR code copies public address (after wallet init!)
             class QrClickListener implements OnClickListener {
-                final private Address addr;
+                private final Address addr;
 
                 public QrClickListener(Address addr) {
                     this.addr = addr;
@@ -306,7 +320,7 @@ public class BitFluidsMainActivity extends Activity {
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
-        double value = amountBtc.doubleValue() / Utils.SATOSHIS_PER_BITCOIN.doubleValue();
+        double value = amountBtc.doubleValue() / Utils.SATOSHIS_PER_BITCOIN;
         String txt = Utils.uriDF.format(value) + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
         qr_txt.setText(txt);
         return qr_bitmap;

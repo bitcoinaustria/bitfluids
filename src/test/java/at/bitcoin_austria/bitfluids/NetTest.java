@@ -89,6 +89,12 @@ public abstract class NetTest {
     });
       CasualListener listener = new CasualListener(thisEnv);
       listener.addNotifier(notifier);
+      listener.setStatsNotifier(new Stats() {
+          @Override
+          public void update(double tpm) {
+              System.out.println("tpm = " + tpm);
+          }
+      });
       while (true) {
       try {
           Thread.sleep(1000);

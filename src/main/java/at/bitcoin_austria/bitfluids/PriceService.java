@@ -37,7 +37,6 @@ import java.util.List;
  */
 public class PriceService {
 
-    private static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
     private Double lastResult;
     private long lastTimeChecked;
 
@@ -50,7 +49,7 @@ public class PriceService {
     }
 
     public synchronized Double getEurQuote() throws RemoteSystemFail {
-        if ((lastResult != null) && (new Date().getTime() - lastTimeChecked < TEN_MINUTES_IN_MILLIS)) {
+        if ((lastResult != null) && (new Date().getTime() - lastTimeChecked < Utils.TEN_MINUTES_IN_MILLIS)) {
             notifySuccess();
             return lastResult;
         }

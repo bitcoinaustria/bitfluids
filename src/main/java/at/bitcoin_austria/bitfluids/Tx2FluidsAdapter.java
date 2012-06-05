@@ -50,7 +50,7 @@ public class Tx2FluidsAdapter {
             @Override
             public void onValue(BigInteger satoshis, Address key) {
                 FluidType type = lookup.get(key);
-                BigDecimal bitcoins = new BigDecimal(satoshis).divide(Utils.SATOSHIS_PER_BITCOIN);
+                BigDecimal bitcoins = new BigDecimal(satoshis).divide(BigDecimal.valueOf(Utils.SATOSHIS_PER_BITCOIN));
                 try {
                     double price = priceService.getEurQuote();
                     BigDecimal eurPerBitcoin = BigDecimal.valueOf(price);
