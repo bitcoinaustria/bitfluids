@@ -39,7 +39,6 @@ import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.concurrent.Executors;
@@ -252,7 +251,7 @@ public class BitFluidsMainActivity extends Activity {
                     }
 
                     @Override
-                    public void onError(String message, FluidType type, BigDecimal bitcoins) {
+                    public void onError(String message, FluidType type, Bitcoins bitcoins) {
 
                     }
             });
@@ -314,19 +313,18 @@ public class BitFluidsMainActivity extends Activity {
         */
     }
 
-    private Bitmap drawOneQrCode(int id, int id_txt, BigInteger amountBtc, double amountEur, Address addr, String label) {
+    private Bitmap drawOneQrCode(int id, int id_txt, Bitcoins amountBtc, double amountEur, Address addr, String label) {
         String uri = Utils.makeBitcoinUri(addr, amountBtc,label);
         Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512); //todo is 512 maybe too big?
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
-        double value = amountBtc.doubleValue() / Utils.SATOSHIS_PER_BITCOIN;
-        String txt = Utils.uriDF.format(value) + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
+        String txt = amountBtc + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
         qr_txt.setText(txt);
         return qr_bitmap;
     }
 
-    void drawQrCodes(BigInteger btc1_5, double eur1_5, BigInteger btc2_0, double eur2_0) {
+    void drawQrCodes(Bitcoins btc1_5, double eur1_5, Bitcoins btc2_0, double eur2_0) {
         String label200 = "Bitfluids " + FluidType.MATE.getDescription();
         String label150 = "Bitfluids " + FluidType.COLA.getDescription();
         state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, env.getKey200(), label200);

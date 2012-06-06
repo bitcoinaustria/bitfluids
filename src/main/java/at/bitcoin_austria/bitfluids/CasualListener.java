@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
-import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -45,8 +44,8 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author apetersson
  */
 public class CasualListener {
-    public static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
-    public static final int MILLIS_PER_MINUTE = 1000 * 60;
+    private static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
+    private static final int MILLIS_PER_MINUTE = 1000 * 60;
     private final Environment env;
     private final List<Address> lookingFor;
     private final List<Consumer<Integer>> peerCountListeners;
@@ -61,7 +60,7 @@ public class CasualListener {
     //we keep strong refs to these to surely not double-check
     private final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
 
-    TreeSet<Long> transactionTimes = new TreeSet<Long>();
+    private final TreeSet<Long> transactionTimes = new TreeSet<Long>();
     private final long startupTime;
     private Stats stats;
 
@@ -188,10 +187,10 @@ public class CasualListener {
                     byte[] candidate = candidateAddress.getHash160();
                     for (Address address : lookingFor) {
                         if (Arrays.equals(address.getHash160(), candidate)) {
-                            BigInteger satoshis = output.getValue();
-                            LOGGER.debug("detected relevant transaction!" + satoshis);
+                            Bitcoins bitcoins = Bitcoins.valueOf(output);
+                            LOGGER.debug("detected relevant transaction!" + bitcoins);
                             wasInteresting = true;
-                            txNotifier.onValue(satoshis, address);
+                            txNotifier.onValue(bitcoins, address);
                         }
                     }
                 }

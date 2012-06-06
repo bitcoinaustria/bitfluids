@@ -1,3 +1,19 @@
+/*
+ * Copyright 2012 Bitcoin Austria
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package at.bitcoin_austria.bitfluids;
 
 import org.junit.Test;
@@ -16,18 +32,19 @@ public class RoundTest {
 
     @Test
     public void roundTest() {
-        BigDecimal satoshis = BigDecimal.valueOf(FluidType.MATE.getEuroPrice() / EUR_PRICE).multiply(BigDecimal.valueOf(Utils.SATOSHIS_PER_BITCOIN));
-        testRounding(1.0, satoshis);
-        testRounding(1.03, satoshis.multiply(BigDecimal.valueOf(1.03)), 0.0000001);
-        testRounding(1.0, satoshis.multiply(BigDecimal.valueOf(1.01)));
-        testRounding(1.5, satoshis.multiply(BigDecimal.valueOf(1.5)), 0.0000001);
+        double expectedPrice = FluidType.MATE.getEuroPrice() / EUR_PRICE;
+        Bitcoins bitcoins = Bitcoins.nearestValue(expectedPrice);
+        testRounding(1.0, bitcoins);
+        testRounding(1.03, Bitcoins.nearestValue(expectedPrice*1.03), 0.0000001);
+        testRounding(1.0, Bitcoins.nearestValue(expectedPrice*1.01));
+        testRounding(1.5, Bitcoins.nearestValue(expectedPrice*1.5), 0.0000001);
     }
 
-    private void testRounding(final double expectedValue, BigDecimal satoshis) {
+    private void testRounding(final double expectedValue, Bitcoins satoshis) {
         testRounding(expectedValue, satoshis, 0);
     }
 
-    private void testRounding(final double expectedValue, BigDecimal satoshis, final double epsilon) {
+    private void testRounding(final double expectedValue, Bitcoins bitcoins, final double epsilon) {
         PriceService priceService = new PriceService(null) {
             @Override
             public synchronized Double getEurQuote() throws RemoteSystemFail {
@@ -44,12 +61,12 @@ public class RoundTest {
             }
 
             @Override
-            public void onError(String message, FluidType type, BigDecimal bitcoins) {
+            public void onError(String message, FluidType type, Bitcoins bitcoins) {
 
             }
         });
 
-        trigger.onValue(satoshis.toBigInteger(), Environment.TEST.getKey200());
+        trigger.onValue(bitcoins, Environment.TEST.getKey200());
         assertTrue(wasTested[0]);
     }
 }

@@ -26,20 +26,18 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Hashtable;
 
 public class Utils {
-    public static final QRCodeWriter QR_CODE_WRITER = new QRCodeWriter();
+    private static final QRCodeWriter QR_CODE_WRITER = new QRCodeWriter();
     public static final String MTGOX_BTCEUR = "https://mtgox.com/api/1/BTCEUR/public/ticker";
     //todo SDF is not threadsafe, either use joda-time or create a new one each time
     public static final SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss");
     public static final DecimalFormat uriDF = new DecimalFormat("0.########");
     public static final DecimalFormat eurDF = new DecimalFormat("0.00 €");
     public static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
-    public static final long SATOSHIS_PER_BITCOIN = (long) Math.pow(10, 8); //100 000 000
 
     /**
      * we aim for the first example at <a
@@ -55,11 +53,11 @@ public class Utils {
      * @param label  the label parameter, could be "null"
      * @return URI consumable by
      */
-    public static String makeBitcoinUri(Address addr, BigInteger amount, String label) {
+    public static String makeBitcoinUri(Address addr, Bitcoins amount, String label) {
         StringBuilder uriSB = new StringBuilder();
         uriSB.append("bitcoin:").append(addr).append("?");
         // X8 as part of the number format doesn't work :(
-        uriSB.append("amount=").append(uriDF.format((amount.doubleValue() / SATOSHIS_PER_BITCOIN)));
+        uriSB.append("amount=").append(amount);
         if (label != null)
             uriSB.append("?").append("label=").append(label);
         return uriSB.toString();

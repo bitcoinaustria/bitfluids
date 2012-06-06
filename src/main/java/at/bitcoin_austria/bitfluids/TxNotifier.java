@@ -18,8 +18,6 @@ package at.bitcoin_austria.bitfluids;
 
 import com.google.bitcoin.core.Address;
 
-import java.math.BigInteger;
-
 public interface TxNotifier {
-    void onValue(BigInteger satoshis, Address key);
+    void onValue(Bitcoins bitcoins, Address key);
 }

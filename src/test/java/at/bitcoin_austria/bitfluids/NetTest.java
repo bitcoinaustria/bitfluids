@@ -83,7 +83,7 @@ public abstract class NetTest {
       }
 
       @Override
-      public void onError(String message, FluidType type, BigDecimal bitcoins) {
+      public void onError(String message, FluidType type, Bitcoins bitcoins) {
         LOGGER.warn("someone paid for " + bitcoins + " " + type + " ");
       }
     });
