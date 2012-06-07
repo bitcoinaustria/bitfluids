@@ -18,7 +18,6 @@ package at.bitcoin_austria.bitfluids;
 
 import android.graphics.Bitmap;
 import android.graphics.Color;
-import com.google.bitcoin.core.Address;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
@@ -35,33 +34,8 @@ public class Utils {
     public static final String MTGOX_BTCEUR = "https://mtgox.com/api/1/BTCEUR/public/ticker";
     //todo SDF is not threadsafe, either use joda-time or create a new one each time
     public static final SimpleDateFormat timeFmt = new SimpleDateFormat("HH:mm:ss");
-    public static final DecimalFormat uriDF = new DecimalFormat("0.########");
     public static final DecimalFormat eurDF = new DecimalFormat("0.00 €");
     public static final int TEN_MINUTES_IN_MILLIS = 10 * 60 * 1000;
-
-    /**
-     * we aim for the first example at <a
-     * href="https://en.bitcoin.it/wiki/URI_Scheme">bitcoin uri scheme</a>.
-     * <p/>
-     * i.e.
-     * <p/>
-     * <pre>
-     * bitcoin:1NS17iag9jJgTHD1VXjvLCEnZuQ3rJED9L?amount=20.3X8&label=Luke-Jr
-     * </pre>
-     *
-     * @param amount in BTC
-     * @param label  the label parameter, could be "null"
-     * @return URI consumable by
-     */
-    public static String makeBitcoinUri(Address addr, Bitcoins amount, String label) {
-        StringBuilder uriSB = new StringBuilder();
-        uriSB.append("bitcoin:").append(addr).append("?");
-        // X8 as part of the number format doesn't work :(
-        uriSB.append("amount=").append(amount);
-        if (label != null)
-            uriSB.append("?").append("label=").append(label);
-        return uriSB.toString();
-    }
 
     public static Bitmap getQRCodeBitmap(final String url, final int size) {
         try {

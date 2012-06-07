@@ -37,6 +37,7 @@ import at.bitcoin_austria.bitfluids.trafficSignal.Status;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignal;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
+import com.google.bitcoin.uri.BitcoinURI;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -314,7 +315,7 @@ public class BitFluidsMainActivity extends Activity {
     }
 
     private Bitmap drawOneQrCode(int id, int id_txt, Bitcoins amountBtc, double amountEur, Address addr, String label) {
-        String uri = Utils.makeBitcoinUri(addr, amountBtc,label);
+        String uri = BitcoinURI.convertToBitcoinURI(addr, amountBtc.toBigInteger(), label, "");
         Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512); //todo is 512 maybe too big?
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);

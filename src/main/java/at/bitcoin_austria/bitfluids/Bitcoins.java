@@ -20,6 +20,7 @@ import com.google.bitcoin.core.TransactionOutput;
 import com.google.common.base.Preconditions;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 /**
  * a core Bitcoin Value representation, caputuring many domain specific aspects of it.
@@ -113,5 +114,9 @@ public final class Bitcoins {
         if (satoshis != bitcoins.satoshis) return false;
 
         return true;
+    }
+
+    public BigInteger toBigInteger() {
+        return BigInteger.valueOf(satoshis);
     }
 }
