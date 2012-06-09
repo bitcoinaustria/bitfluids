@@ -158,9 +158,22 @@ public class BitFluidsMainActivity extends Activity {
 
         { // size of QR codes should be a bit less than 1/3rd of (longest) screen
             // dimension - the layout default is ok, but this should work better.
-            int displayWidth = getWindowManager().getDefaultDisplay().getWidth();
-            int displayHeight = getWindowManager().getDefaultDisplay().getHeight();
-            int qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * 0.9);
+            int qrSize = 1, displayWidth, displayHeight;
+            double scale = 0.8;
+            switch (getResources().getConfiguration().orientation) {
+            case Configuration.ORIENTATION_LANDSCAPE:
+                displayHeight = getWindowManager().getDefaultDisplay().getHeight();
+                qrSize = (int) ((displayHeight / 2.0) * scale);
+                break;
+            case Configuration.ORIENTATION_PORTRAIT:
+                displayWidth = getWindowManager().getDefaultDisplay().getWidth();
+                qrSize = (int) ((displayWidth / 3.0) * scale);
+                break;
+            default:
+                displayWidth = getWindowManager().getDefaultDisplay().getWidth();
+                displayHeight = getWindowManager().getDefaultDisplay().getHeight();
+                qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * scale);
+            }
             LinearLayout.LayoutParams qr_ll = new LinearLayout.LayoutParams(qrSize, qrSize);
             qr_alk.setLayoutParams(qr_ll);
             qr_nonalk.setLayoutParams(qr_ll);
