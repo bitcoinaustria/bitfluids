@@ -27,6 +27,7 @@ import java.util.Map;
  * this is an Adapter between a transaction notifier
  * which is easily providable from bitcoinj and a FluidsNotifier which is needed in the UI code.
  * does some custom rounding (within 2%) for clearer display for the user..
+ *
  * @author apetersson
  */
 public class Tx2FluidsAdapter {

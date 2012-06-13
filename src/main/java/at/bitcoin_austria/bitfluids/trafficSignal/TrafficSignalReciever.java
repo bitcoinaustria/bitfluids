@@ -17,8 +17,8 @@
 package at.bitcoin_austria.bitfluids.trafficSignal;
 
 /**
-* @author apetersson
-*/
+ * @author apetersson
+ */
 public interface TrafficSignalReciever {
     void onStatusChanged(SignalType signalType, Status status);
 }

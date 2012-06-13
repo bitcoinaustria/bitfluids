@@ -22,12 +22,14 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import at.bitcoin_austria.bitfluids.*;
+import at.bitcoin_austria.bitfluids.CasualListener;
+import at.bitcoin_austria.bitfluids.Consumer;
+import at.bitcoin_austria.bitfluids.PriceService;
 
 /**
  * @author apetersson
  */
-public  class TrafficSignal {
+public class TrafficSignal {
 
     private final Context context;
     private final PriceService priceService;
@@ -43,7 +45,7 @@ public  class TrafficSignal {
      * @param trafficSignReciever where you will be notified
      * @return the BroadcastReceiver to unregister by the UI
      */
-    public BroadcastReceiver addNotifier(final TrafficSignalReciever trafficSignReciever){
+    public BroadcastReceiver addNotifier(final TrafficSignalReciever trafficSignReciever) {
         checkInternet(trafficSignReciever);
         IntentFilter intentFilter = new IntentFilter();
         intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -53,7 +55,7 @@ public  class TrafficSignal {
                 checkInternet(trafficSignReciever);
             }
         };
-        context.registerReceiver(receiver,intentFilter);
+        context.registerReceiver(receiver, intentFilter);
         bitcoinNet.addPeerCountListener(new Consumer<Integer>() {
             @Override
             public void consume(Integer count) {

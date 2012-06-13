@@ -66,7 +66,7 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
         StringBuilder text = new StringBuilder();
         if (btceur != null) {
             activity.getState().btceur = btceur;
-            Bitcoins price150 =  Bitcoins.nearestValue(FluidType.COLA.getEuroPrice() / btceur);
+            Bitcoins price150 = Bitcoins.nearestValue(FluidType.COLA.getEuroPrice() / btceur);
             Bitcoins price200 = Bitcoins.nearestValue(FluidType.MATE.getEuroPrice() / btceur);
             text.append("1฿ = ").append(btceur).append("€");
             //todo draw QR codes in background, this is apparently slow and blocks main thread

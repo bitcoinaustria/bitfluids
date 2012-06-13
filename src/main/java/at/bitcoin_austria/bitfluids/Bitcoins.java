@@ -35,6 +35,7 @@ public final class Bitcoins {
     private static final long SATOSHIS_PER_BITCOIN = (long) Math.pow(10, 8);
     private static final BigDecimal SATOSHIS_PER_BITCOIN_BD = BigDecimal.valueOf(SATOSHIS_PER_BITCOIN);
     private static final long MAX_VALUE = 21000000 * SATOSHIS_PER_BITCOIN;
+    public static final String BITCOIN_SYMBOL = "฿";
 
     private final long satoshis;
 
@@ -118,5 +119,9 @@ public final class Bitcoins {
 
     public BigInteger toBigInteger() {
         return BigInteger.valueOf(satoshis);
+    }
+
+    public String toCurrencyString() {
+        return toString() + " " + BITCOIN_SYMBOL;
     }
 }

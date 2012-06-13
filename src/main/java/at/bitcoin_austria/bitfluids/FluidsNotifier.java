@@ -23,6 +23,7 @@ import java.math.BigDecimal;
  */
 public interface FluidsNotifier {
 
-    void onFluidPaid(FluidType type,BigDecimal amount);
+    void onFluidPaid(FluidType type, BigDecimal amount);
+
     void onError(String message, FluidType type, Bitcoins bitcoins);
 }

@@ -253,7 +253,11 @@ public class BitFluidsMainActivity extends Activity {
 
                     @Override
                     public void onError(String message, FluidType type, Bitcoins bitcoins) {
-
+                        transactionList.add(type.getDescription() + " im wert von " + bitcoins.toCurrencyString() + " ");
+                        if (transactionList.size() > 5) {
+                            transactionList.remove(0);
+                        }
+                        list_view_array.notifyDataSetChanged();
                     }
             });
             bitcoinTransactionListener.addNotifier(convert);
@@ -320,7 +324,7 @@ public class BitFluidsMainActivity extends Activity {
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
-        String txt = amountBtc + "฿\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
+        String txt = amountBtc.toCurrencyString() + "\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
         qr_txt.setText(txt);
         return qr_bitmap;
     }

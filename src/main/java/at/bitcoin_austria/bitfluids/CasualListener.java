@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * we will maintain the blockchain ourselves, which means increased startup time and bandwidth.
  * also less flexibility due to not knowing the deposit public keys.
  * todo 2: inform UI about changes in confidence (double-spend, more peers seen it, inclusion in block)
+ *
  * @author apetersson
  */
 public class CasualListener {
@@ -78,8 +79,9 @@ public class CasualListener {
     /**
      * this starts off acitivity in the bitcoin network. (non-blocking)
      * to stop activity
-     * @see #shutdown()
+     *
      * @param txNotifier callback when a new matching transaction occurs
+     * @see #shutdown()
      */
     public void addNotifier(final TxNotifier txNotifier) {
         final PeerEventListener txProcessListener = new AbstractPeerEventListener() {
@@ -98,7 +100,7 @@ public class CasualListener {
                  */
                 @Override
                 public Message onPreMessageReceived(Peer peer, Message m) {
-                    if (m instanceof Block){
+                    if (m instanceof Block) {
                         return null;
                     }
                     return m;

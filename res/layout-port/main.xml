@@ -19,9 +19,11 @@
 
             <ImageView
                 android:id="@+id/qr_code_alk"
-                android:layout_width="150dp"
-                android:layout_height="150dp"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
                 android:paddingRight="2dp"
+                android:background="@android:color/background_light"
+                android:layout_gravity="center"
                 android:scaleType="fitCenter" android:contentDescription="@string/qrcode200"/>
 
             <TextView
@@ -44,9 +46,11 @@
 
             <ImageView
                 android:id="@+id/qr_code_nonalk"
-                android:layout_width="150dp"
-                android:layout_height="150dp"
+                android:layout_width="140dp"
+                android:layout_height="140dp"
                 android:paddingRight="2dp"
+                android:background="#80ffffff"
+                android:layout_gravity="center"
                 android:scaleType="fitCenter" android:contentDescription="@string/qrcode150"/>
 
             <TextView
