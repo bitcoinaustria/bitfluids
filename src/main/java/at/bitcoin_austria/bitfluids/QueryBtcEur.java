@@ -16,8 +16,10 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import android.graphics.Bitmap;
 import android.os.AsyncTask;
 import android.widget.TextView;
+import com.google.bitcoin.uri.BitcoinURI;
 
 import java.util.Date;
 
@@ -28,22 +30,48 @@ import java.util.Date;
  *
  * @author schilly
  */
-final class QueryBtcEur extends AsyncTask<Void, String, Double> {
+final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
     private final TextView txt_view;
     private final BitFluidsMainActivity activity;
     private final PriceService priceService;
+    private final Environment env;
 
-    QueryBtcEur(BitFluidsMainActivity activity, PriceService priceService) {
+    QueryBtcEur(BitFluidsMainActivity activity, PriceService priceService, Environment env) {
         this.activity = activity;
         this.priceService = priceService;
+        this.env = env;
         this.txt_view = (TextView) activity.findViewById(R.id.recent_activity);
     }
 
+    protected static class Data {
+        final Double price;
+        final Bitmap qrcode2_0;
+        final Bitmap qrcode1_5;
+        final Bitcoins price15;
+        final Bitcoins price20;
+
+
+        private Data(Double price, Bitmap qrcode2_0, Bitmap qrcode1_5, Bitcoins price15, Bitcoins price20) {
+            this.price = price;
+            this.qrcode2_0 = qrcode2_0;
+            this.qrcode1_5 = qrcode1_5;
+            this.price15 = price15;
+            this.price20 = price20;
+        }
+    }
+
     @Override
-    protected Double doInBackground(Void... v) {
+    protected QueryBtcEur.Data doInBackground(Void... v) {
         publishProgress("connecting …");
         try {
-            return priceService.getEurQuote();
+            Double btceur = priceService.getEurQuote();
+            Bitcoins price150 = Bitcoins.nearestValue(FluidType.COLA.getEuroPrice() / btceur);
+            Bitcoins price200 = Bitcoins.nearestValue(FluidType.MATE.getEuroPrice() / btceur);
+            String uri150 = BitcoinURI.convertToBitcoinURI(env.getKey150(), price150.toBigInteger(), FluidType.COLA.getDescription(),null);
+            String uri200 = BitcoinURI.convertToBitcoinURI(env.getKey200(), price200.toBigInteger(), FluidType.COLA.getDescription(),null);
+            Bitmap bitmap150 = Utils.getQRCodeBitmap(uri150, 512);
+            Bitmap bitmap200 = Utils.getQRCodeBitmap(uri200, 512);
+            return new Data(btceur,bitmap200,bitmap150, price150, price200);
         } catch (RemoteSystemFail remoteSystemFail) {
             publishProgress("ERROR: " + remoteSystemFail.getMessage());
             return null;
@@ -62,15 +90,13 @@ final class QueryBtcEur extends AsyncTask<Void, String, Double> {
      * this one runs on the UI thread
      */
     @Override
-    protected void onPostExecute(Double btceur) {
+    protected void onPostExecute(Data data) {
         StringBuilder text = new StringBuilder();
-        if (btceur != null) {
-            activity.getState().btceur = btceur;
-            Bitcoins price150 = Bitcoins.nearestValue(FluidType.COLA.getEuroPrice() / btceur);
-            Bitcoins price200 = Bitcoins.nearestValue(FluidType.MATE.getEuroPrice() / btceur);
-            text.append("1฿ = ").append(btceur).append("€");
+        if (data != null) {
+            activity.getState().btceur = data.price;
+            text.append("1฿ = ").append(data.price).append("€");
             //todo draw QR codes in background, this is apparently slow and blocks main thread
-            activity.drawQrCodes(price150, FluidType.COLA.getEuroPrice(), price200, FluidType.MATE.getEuroPrice());
+            activity.drawQrCodes(data.qrcode1_5,data.qrcode2_0, data.price15,data.price20);
         } else {
             text.append("<Error: NULL>");
         }
