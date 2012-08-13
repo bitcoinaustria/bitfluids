@@ -27,7 +27,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
 import android.text.ClipboardManager;
-import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
@@ -37,7 +36,6 @@ import at.bitcoin_austria.bitfluids.trafficSignal.Status;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignal;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
-import com.google.bitcoin.uri.BitcoinURI;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -100,15 +98,11 @@ public class BitFluidsMainActivity extends Activity {
         list_view_tx = (ListView) findViewById(R.id.list_view_tx);
         qr_alk = (ImageView) findViewById(R.id.qr_code_alk);
         qr_nonalk = (ImageView) findViewById(R.id.qr_code_nonalk);
-        if (state.qr_alk_img == null) {
-            qr_alk.setImageBitmap(state.qr_alk_img);
-        }
-        if (state.qr_nonalk_img == null) {
-            qr_nonalk.setImageBitmap(state.qr_nonalk_img);
-        }
-        TextView first_line = (TextView) findViewById(R.id.first_line);
-        if (state.txt_view_state != null) {
-            first_line.setText(state.txt_view_state);
+        if (state != null) {
+            TextView first_line = (TextView) findViewById(R.id.first_line);
+            if (state.txt_view_state != null) {
+                first_line.setText(state.txt_view_state);
+            }
         }
     }
 
@@ -132,6 +126,33 @@ public class BitFluidsMainActivity extends Activity {
         wakeLock.acquire();
     }
 
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putSerializable("state", state);
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        restoreState(savedInstanceState);
+    }
+
+    private void restoreState(Bundle savedInstanceState) {
+        if (savedInstanceState != null) {
+            state = (BitFluidsActivityState) savedInstanceState.getSerializable("state");
+        }
+        if (state == null) {
+            state = new BitFluidsActivityState();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+    }
+
     /**
      * Called when the activity is first created.
      */
@@ -139,14 +160,7 @@ public class BitFluidsMainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-
-        // if this is not null, we are restarted …
-        state = (BitFluidsActivityState) getLastNonConfigurationInstance();
-        if (state == null) {
-            state = new BitFluidsActivityState();
-        } else {
-            Log.i("STATE", "resuming from known state: " + state);
-        }
+        restoreState(savedInstanceState);   //todo not needed?
         bind();
 
         // what follows is a list of initializations, encapsulated into {} blocks
@@ -234,17 +248,18 @@ public class BitFluidsMainActivity extends Activity {
         {
             // first time on UI thread, to see exceptions properly
             //noinspection unchecked
-            new QueryBtcEur(BitFluidsMainActivity.this, priceService).execute();
+            new QueryBtcEur(BitFluidsMainActivity.this, priceService, env).execute();
             // query mt gox, every 10 minutes
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
-                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService);
+                    QueryBtcEur btcEur = new QueryBtcEur(BitFluidsMainActivity.this, priceService, env);
                     //noinspection unchecked
                     btcEur.execute();
                 }
             };
             scheduler.scheduleAtFixedRate(queryBtcEurTask, 10, 10 * 60, TimeUnit.SECONDS);
+            //todo soll nicht gleichzeitig laufen!
         }
 
         {
@@ -331,23 +346,17 @@ public class BitFluidsMainActivity extends Activity {
         */
     }
 
-    private Bitmap drawOneQrCode(int id, int id_txt, Bitcoins amountBtc, double amountEur, Address addr, String label) {
-        String uri = BitcoinURI.convertToBitcoinURI(addr, amountBtc.toBigInteger(), label, "");
-        Bitmap qr_bitmap = Utils.getQRCodeBitmap(uri, 512); //todo is 512 maybe too big?
+    private void drawOneQrCode(int id, int id_txt, Bitcoins amountBtc, double amountEur, Bitmap qr_bitmap) {
         ImageView qr_image_view = (ImageView) findViewById(id);
         qr_image_view.setImageBitmap(qr_bitmap);
         TextView qr_txt = ((TextView) findViewById(id_txt));
         String txt = amountBtc.toCurrencyString() + "\n" + "(~" + Utils.eurDF.format(amountEur) + ")";
         qr_txt.setText(txt);
-        return qr_bitmap;
     }
 
-    void drawQrCodes(Bitcoins btc1_5, double eur1_5, Bitcoins btc2_0, double eur2_0) {
-        String label200 = "Bitfluids " + FluidType.MATE.getDescription();
-        String label150 = "Bitfluids " + FluidType.COLA.getDescription();
-        state.qr_alk_img = drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc2_0, eur2_0, env.getKey200(), label200);
-        state.qr_nonalk_img = drawOneQrCode(R.id.qr_code_nonalk, R.id.qr_code_nonalk_txt, btc1_5, eur1_5,
-                env.getKey150(), label150);
+    void drawQrCodes(Bitmap qrcode1_5, Bitmap qrcode2_0, Bitcoins btc_15, Bitcoins btc_20) {
+        drawOneQrCode(R.id.qr_code_nonalk, R.id.qr_code_nonalk_txt, btc_15, FluidType.COLA.getEuroPrice(), qrcode1_5);
+        drawOneQrCode(R.id.qr_code_alk, R.id.qr_code_alk_txt, btc_20, FluidType.MATE.getEuroPrice(), qrcode2_0);
     }
 
     final void copyToClipboard(final String txt) {
