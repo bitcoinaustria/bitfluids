@@ -16,7 +16,7 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import android.graphics.Bitmap;
+import java.io.Serializable;
 
 /**
  * this <b>static</b> inner class stores the state, including the background
@@ -24,9 +24,7 @@ import android.graphics.Bitmap;
  *
  * @author schilly
  */
-class BitFluidsActivityState {
-    Bitmap qr_nonalk_img;
-    Bitmap qr_alk_img;
+class BitFluidsActivityState implements Serializable {
     String txt_view_state;
     Double btceur;
 
