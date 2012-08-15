@@ -29,7 +29,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import java.io.File;
-import java.math.BigDecimal;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -78,8 +77,8 @@ public abstract class NetTest {
     Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(new PriceService(wrapClient(new DefaultHttpClient())), thisEnv);
     TxNotifier notifier = adapter.convert(new FluidsNotifier() {
       @Override
-      public void onFluidPaid(FluidType type, BigDecimal amount) {
-        LOGGER.info("someone paid for " + amount + " " + type + " ");
+      public void onFluidPaid(TransactionItem transactionItem) {
+          LOGGER.info("someone paid for " + transactionItem);
       }
 
       @Override
@@ -87,8 +86,8 @@ public abstract class NetTest {
         LOGGER.warn("someone paid for " + bitcoins + " " + type + " ");
       }
     });
-      CasualListener listener = new CasualListener(thisEnv);
-      listener.addNotifier(notifier);
+      BitcoinTransactionListener listener = new BitcoinTransactionListener(thisEnv);
+      listener.init(notifier);
       listener.setStatsNotifier(new Stats() {
           @Override
           public void update(double tpm) {

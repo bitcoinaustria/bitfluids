@@ -36,10 +36,10 @@ import at.bitcoin_austria.bitfluids.trafficSignal.Status;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignal;
 import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
+import com.google.bitcoin.core.Sha256Hash;
+import com.google.common.base.Preconditions;
 
-import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.LinkedList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -54,40 +54,38 @@ public class BitFluidsMainActivity extends Activity {
 
     // list of transactions, change it via the ArrayAdapter
     private ListView list_view_tx;
-    private ArrayAdapter<String> list_view_array;
+    private ArrayAdapter<TransactionItem> list_view_array;
 
     private BitFluidsActivityState state;
 
     private ImageView qr_alk;
     private ImageView qr_nonalk;
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-    private LinkedList<String> transactionList;
 
     //service dependencies, initialized in constructor, run/shutdown in onCreate onDestroy
     private final PriceService priceService;
     private final TrafficSignal trafficSignal;
-    private final CasualListener bitcoinTransactionListener;
+    private final BitcoinTransactionListener bitcoinTransactionListener;
     private BroadcastReceiver netStatusReciever;
 
     public BitFluidsMainActivity() {
         priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
         //todo idea: render a fancy scrolling graph for this
-        bitcoinTransactionListener = new CasualListener(env);
+        bitcoinTransactionListener = new BitcoinTransactionListener(env);
         trafficSignal = new TrafficSignal(this, bitcoinTransactionListener, priceService);
     }
 
-    BitFluidsActivityState getState() {
-        return state;
-    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (netStatusReciever != null) {
-            unregisterReceiver(netStatusReciever);
-            netStatusReciever = null;
-        }
+        if (isFinishing()) {
+            if (netStatusReciever != null) {
+                unregisterReceiver(netStatusReciever);
+                netStatusReciever = null;
+            }
         bitcoinTransactionListener.shutdown();
+        }
     }
 
 
@@ -98,12 +96,12 @@ public class BitFluidsMainActivity extends Activity {
         list_view_tx = (ListView) findViewById(R.id.list_view_tx);
         qr_alk = (ImageView) findViewById(R.id.qr_code_alk);
         qr_nonalk = (ImageView) findViewById(R.id.qr_code_nonalk);
-        if (state != null) {
+        /*  if (state != null) {
             TextView first_line = (TextView) findViewById(R.id.first_line);
             if (state.txt_view_state != null) {
                 first_line.setText(state.txt_view_state);
             }
-        }
+        }   */
     }
 
     @Override
@@ -139,12 +137,14 @@ public class BitFluidsMainActivity extends Activity {
     }
 
     private void restoreState(Bundle savedInstanceState) {
+        Preconditions.checkNotNull(bitcoinTransactionListener);
         if (savedInstanceState != null) {
             state = (BitFluidsActivityState) savedInstanceState.getSerializable("state");
         }
         if (state == null) {
             state = new BitFluidsActivityState();
         }
+        bitcoinTransactionListener.addHashes(state.getTransactionItems());
     }
 
     @Override
@@ -195,9 +195,8 @@ public class BitFluidsMainActivity extends Activity {
 
         { // init the tx list
             // this will be tx objects …
-            transactionList = new LinkedList<String>();
             // … and here we would need a custom array adapter
-            list_view_array = new ArrayAdapter<String>(this, R.layout.list_tx_item, transactionList);
+            list_view_array = new ArrayAdapter<TransactionItem>(this, R.layout.list_tx_item, state.getTransactionItems());
             list_view_tx.setAdapter(list_view_array);
 
             list_view_tx.setOnItemClickListener(new OnItemClickListener() {
@@ -246,10 +245,6 @@ public class BitFluidsMainActivity extends Activity {
 
 
         {
-            // first time on UI thread, to see exceptions properly
-            //noinspection unchecked
-            new QueryBtcEur(BitFluidsMainActivity.this, priceService, env).execute();
-            // query mt gox, every 10 minutes
             final Runnable queryBtcEurTask = new Runnable() {
                 @Override
                 public void run() {
@@ -258,7 +253,7 @@ public class BitFluidsMainActivity extends Activity {
                     btcEur.execute();
                 }
             };
-            scheduler.scheduleAtFixedRate(queryBtcEurTask, 10, 10 * 60, TimeUnit.SECONDS);
+            scheduler.scheduleAtFixedRate(queryBtcEurTask, 0, 10 * 60, TimeUnit.SECONDS);
             //todo soll nicht gleichzeitig laufen!
         }
 
@@ -266,29 +261,29 @@ public class BitFluidsMainActivity extends Activity {
             Tx2FluidsAdapter adapter = new Tx2FluidsAdapter(priceService, env);
             TxNotifier convert = adapter.convert(new FluidsNotifier() {
                 @Override
-                    public void onFluidPaid(final FluidType type, final BigDecimal amount) {
-                        runOnUiThread(new Runnable() {
-                            @Override
+                public void onFluidPaid(final TransactionItem transactionItem) {
+                    runOnUiThread(new Runnable() {
+                        @Override
                             public void run() {
-                                transactionList.add(type.getDescription() + " " + amount + " Stück");
-                                if (transactionList.size() > 5) {
-                                    transactionList.remove(0);
-                                }
-                                list_view_array.notifyDataSetChanged();
+                            state.getTransactionItems().add(transactionItem);
+                            list_view_array.notifyDataSetChanged();
                             }
                         });
                     }
 
                     @Override
                     public void onError(String message, FluidType type, Bitcoins bitcoins) {
-                        transactionList.add(type.getDescription() + " im wert von " + bitcoins.toCurrencyString() + " ");
-                        if (transactionList.size() > 5) {
-                            transactionList.remove(0);
-                        }
-                        list_view_array.notifyDataSetChanged();
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                state.getTransactionItems().add(new TransactionItem(null, null, Double.NaN, Double.NaN, Sha256Hash.ZERO_HASH));
+                                list_view_array.notifyDataSetChanged();
+
+                            }
+                        });
                     }
             });
-            bitcoinTransactionListener.addNotifier(convert);
+            bitcoinTransactionListener.init(convert);
             final TextView TpsText = (TextView) findViewById(R.id.TPS);
             bitcoinTransactionListener.setStatsNotifier(new Stats() {
                 @Override

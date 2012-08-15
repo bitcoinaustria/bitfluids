@@ -93,7 +93,6 @@ final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
     protected void onPostExecute(Data data) {
         StringBuilder text = new StringBuilder();
         if (data != null) {
-            activity.getState().btceur = data.price;
             text.append("1฿ = ").append(data.price).append("€");
             //todo draw QR codes in background, this is apparently slow and blocks main thread
             activity.drawQrCodes(data.qrcode1_5,data.qrcode2_0, data.price15,data.price20);
@@ -101,7 +100,6 @@ final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
             text.append("<Error: NULL>");
         }
         text.append("\num ").append(Utils.timeFmt.format(new Date()));
-        activity.getState().txt_view_state = text.toString();
         this.txt_view.setText(text.toString());
     }
 }

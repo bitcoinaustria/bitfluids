@@ -20,6 +20,7 @@ import com.google.bitcoin.core.*;
 import com.google.bitcoin.discovery.PeerDiscovery;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +45,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author apetersson
  */
-public class CasualListener {
+public class BitcoinTransactionListener {
     private static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
     private static final int MILLIS_PER_MINUTE = 1000 * 60;
     private final Environment env;
@@ -54,7 +55,7 @@ public class CasualListener {
     //    private BlockChain chain;
     private PeerGroup peerGroup;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BitcoinTransactionListener.class);
     //weakhashSet would be sufficient, but there is no such thing
     private final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
@@ -65,7 +66,7 @@ public class CasualListener {
     private final long startupTime;
     private Stats stats;
 
-    public CasualListener(Environment env) {
+    public BitcoinTransactionListener(Environment env) {
         peerCountListeners = new ArrayList<Consumer<Integer>>();
         this.env = env;
         lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
@@ -83,7 +84,8 @@ public class CasualListener {
      * @param txNotifier callback when a new matching transaction occurs
      * @see #shutdown()
      */
-    public void addNotifier(final TxNotifier txNotifier) {
+    public void init(final TxNotifier txNotifier) {
+        Preconditions.checkState(peerGroup == null);
         final PeerEventListener txProcessListener = new AbstractPeerEventListener() {
             @Override
             public void onTransaction(Peer peer, Transaction t) {
@@ -192,7 +194,7 @@ public class CasualListener {
                             Bitcoins bitcoins = Bitcoins.valueOf(output);
                             LOGGER.debug("detected relevant transaction!" + bitcoins);
                             wasInteresting = true;
-                            txNotifier.onValue(bitcoins, address);
+                            txNotifier.onValue(bitcoins, address, t.getHash());
                         }
                     }
                 }
@@ -222,6 +224,13 @@ public class CasualListener {
 
     public void shutdown() {
         peerGroup.stop();
+        peerGroup = null;
+    }
+
+    public void addHashes(List<TransactionItem> transactionItems) {
+        for (TransactionItem item : transactionItems) {
+            interestingHashes.add(item.hash);
+        }
     }
 
     private static class DummyBlockStore implements BlockStore {

@@ -16,9 +16,8 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import com.google.bitcoin.core.Sha256Hash;
 import org.junit.Test;
-
-import java.math.BigDecimal;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -55,8 +54,8 @@ public class RoundTest {
         final boolean[] wasTested = {false};
         TxNotifier trigger = toTest.convert(new FluidsNotifier() {
             @Override
-            public void onFluidPaid(FluidType type, BigDecimal amount) {
-                assertEquals(expectedValue, amount.doubleValue(), epsilon);
+            public void onFluidPaid(TransactionItem transactionItem) {
+                assertEquals(expectedValue, transactionItem.count, epsilon);
                 wasTested[0] = true;
             }
 
@@ -66,7 +65,7 @@ public class RoundTest {
             }
         });
 
-        trigger.onValue(bitcoins, Environment.TEST.getKey200());
+        trigger.onValue(bitcoins, Environment.TEST.getKey200(), Sha256Hash.ZERO_HASH);
         assertTrue(wasTested[0]);
     }
 }

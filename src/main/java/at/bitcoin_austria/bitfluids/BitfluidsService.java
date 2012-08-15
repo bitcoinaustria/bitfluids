@@ -16,14 +16,17 @@
 
 package at.bitcoin_austria.bitfluids;
 
-import java.math.BigDecimal;
+import android.app.Service;
+import android.content.Intent;
+import android.os.IBinder;
 
 /**
  * @author apetersson
  */
-public interface FluidsNotifier {
+public class BitfluidsService extends Service {
 
-    void onFluidPaid(TransactionItem transactionItem);
-
-    void onError(String message, FluidType type, Bitcoins bitcoins);
+    @Override
+    public IBinder onBind(Intent intent) {
+        return null;
+    }
 }

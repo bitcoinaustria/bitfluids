@@ -17,7 +17,8 @@
 package at.bitcoin_austria.bitfluids;
 
 import com.google.bitcoin.core.Address;
+import com.google.bitcoin.core.Sha256Hash;
 
 public interface TxNotifier {
-    void onValue(Bitcoins bitcoins, Address key);
+    void onValue(Bitcoins bitcoins, Address key, Sha256Hash hash);
 }
