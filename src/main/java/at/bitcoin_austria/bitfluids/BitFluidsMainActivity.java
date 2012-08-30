@@ -19,6 +19,7 @@ package at.bitcoin_austria.bitfluids;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -26,7 +27,9 @@ import android.net.http.AndroidHttpClient;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.PowerManager;
+import android.speech.tts.TextToSpeech;
 import android.text.ClipboardManager;
+import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.*;
@@ -38,13 +41,17 @@ import at.bitcoin_austria.bitfluids.trafficSignal.TrafficSignalReciever;
 import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.Sha256Hash;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import java.text.DecimalFormat;
+import java.util.Locale;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class BitFluidsMainActivity extends Activity {
+    public static final String TAG = "BF";
+    public static final int TTS_ACTION = 1224;
     private final Environment env = Environment.PROD;
 
     private final Handler uiHandler = new Handler();
@@ -54,7 +61,7 @@ public class BitFluidsMainActivity extends Activity {
 
     // list of transactions, change it via the ArrayAdapter
     private ListView list_view_tx;
-    private ArrayAdapter<TransactionItem> list_view_array;
+    private ArrayAdapter<TransactionItem> list_view_adapter;
 
     private BitFluidsActivityState state;
 
@@ -63,29 +70,36 @@ public class BitFluidsMainActivity extends Activity {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     //service dependencies, initialized in constructor, run/shutdown in onCreate onDestroy
-    private final PriceService priceService;
-    private final TrafficSignal trafficSignal;
-    private final BitcoinTransactionListener bitcoinTransactionListener;
+    private BitcoinTransactionListener bitcoinTransactionListener;
     private BroadcastReceiver netStatusReciever;
+    private TextView netStatus;
+    private TextView exchStatus;
+    private TextView p2pStatus;
+    private TextToSpeech textToSpeech;
 
     public BitFluidsMainActivity() {
-        priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
-        //todo idea: render a fancy scrolling graph for this
-        bitcoinTransactionListener = new BitcoinTransactionListener(env);
-        trafficSignal = new TrafficSignal(this, bitcoinTransactionListener, priceService);
+        Log.i(TAG, "starting up");
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread thread, Throwable throwable) {
+                Log.e(TAG, "excpetion!", throwable);
+            }
+        });
     }
 
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (isFinishing()) {
-            if (netStatusReciever != null) {
-                unregisterReceiver(netStatusReciever);
-                netStatusReciever = null;
-            }
-        bitcoinTransactionListener.shutdown();
+        if (textToSpeech != null) {
+            textToSpeech.shutdown();
         }
+        if (netStatusReciever != null) {
+            unregisterReceiver(netStatusReciever);
+            netStatusReciever = null;
+        }
+        bitcoinTransactionListener.shutdown();
+        bitcoinTransactionListener = null;
     }
 
 
@@ -96,17 +110,19 @@ public class BitFluidsMainActivity extends Activity {
         list_view_tx = (ListView) findViewById(R.id.list_view_tx);
         qr_alk = (ImageView) findViewById(R.id.qr_code_alk);
         qr_nonalk = (ImageView) findViewById(R.id.qr_code_nonalk);
-        /*  if (state != null) {
-            TextView first_line = (TextView) findViewById(R.id.first_line);
-            if (state.txt_view_state != null) {
-                first_line.setText(state.txt_view_state);
-            }
-        }   */
+
+        netStatus = (TextView) findViewById(R.id.NetStatus);
+        exchStatus = (TextView) findViewById(R.id.ExchStatus);
+        p2pStatus = (TextView) findViewById(R.id.P2PStatus);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        if (textToSpeech != null) {
+            textToSpeech.stop();
+            textToSpeech.shutdown();
+        }
         wakeLock.release();
     }
 
@@ -145,6 +161,8 @@ public class BitFluidsMainActivity extends Activity {
             state = new BitFluidsActivityState();
         }
         bitcoinTransactionListener.addHashes(state.getTransactionItems());
+        list_view_adapter = new ArrayAdapter<TransactionItem>(this, R.layout.list_tx_item, Lists.reverse(state.getTransactionItems()));
+        list_view_tx.setAdapter(list_view_adapter);
     }
 
     @Override
@@ -160,8 +178,12 @@ public class BitFluidsMainActivity extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-        restoreState(savedInstanceState);   //todo not needed?
         bind();
+        checkForTTS();
+
+        bitcoinTransactionListener = new BitcoinTransactionListener(env);
+        restoreState(savedInstanceState);
+        final PriceService priceService = new PriceService(AndroidHttpClient.newInstance("Bitfluids 0.1"));
 
         // what follows is a list of initializations, encapsulated into {} blocks
 
@@ -175,18 +197,18 @@ public class BitFluidsMainActivity extends Activity {
             int qrSize = 1, displayWidth, displayHeight;
             double scale = 0.8;
             switch (getResources().getConfiguration().orientation) {
-            case Configuration.ORIENTATION_LANDSCAPE:
-                displayHeight = getWindowManager().getDefaultDisplay().getHeight();
-                qrSize = (int) ((displayHeight / 2.0) * scale);
-                break;
-            case Configuration.ORIENTATION_PORTRAIT:
-                displayWidth = getWindowManager().getDefaultDisplay().getWidth();
-                qrSize = (int) ((displayWidth / 3.0) * scale);
-                break;
-            default:
-                displayWidth = getWindowManager().getDefaultDisplay().getWidth();
-                displayHeight = getWindowManager().getDefaultDisplay().getHeight();
-                qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * scale);
+                case Configuration.ORIENTATION_LANDSCAPE:
+                    displayHeight = getWindowManager().getDefaultDisplay().getHeight();
+                    qrSize = (int) ((displayHeight / 2.0) * scale);
+                    break;
+                case Configuration.ORIENTATION_PORTRAIT:
+                    displayWidth = getWindowManager().getDefaultDisplay().getWidth();
+                    qrSize = (int) ((displayWidth / 3.0) * scale);
+                    break;
+                default:
+                    displayWidth = getWindowManager().getDefaultDisplay().getWidth();
+                    displayHeight = getWindowManager().getDefaultDisplay().getHeight();
+                    qrSize = (int) (Math.max(displayWidth, displayHeight) / 3.0 * scale);
             }
             LinearLayout.LayoutParams qr_ll = new LinearLayout.LayoutParams(qrSize, qrSize);
             qr_alk.setLayoutParams(qr_ll);
@@ -196,8 +218,6 @@ public class BitFluidsMainActivity extends Activity {
         { // init the tx list
             // this will be tx objects …
             // … and here we would need a custom array adapter
-            list_view_array = new ArrayAdapter<TransactionItem>(this, R.layout.list_tx_item, state.getTransactionItems());
-            list_view_tx.setAdapter(list_view_array);
 
             list_view_tx.setOnItemClickListener(new OnItemClickListener() {
                 @Override
@@ -208,15 +228,12 @@ public class BitFluidsMainActivity extends Activity {
         }
 
         {
-            final TextView NetStatus = (TextView) findViewById(R.id.NetStatus);
-            final TextView ExchStatus = (TextView) findViewById(R.id.ExchStatus);
-            final TextView P2PStatus = (TextView) findViewById(R.id.P2PStatus);
-
             int unknown = Color.CYAN;
-            NetStatus.setBackgroundColor(unknown);
-            ExchStatus.setBackgroundColor(unknown);
-            P2PStatus.setBackgroundColor(unknown);
+            netStatus.setBackgroundColor(unknown);
+            exchStatus.setBackgroundColor(unknown);
+            p2pStatus.setBackgroundColor(unknown);
             // start background task to singal Status
+            TrafficSignal trafficSignal = new TrafficSignal(this, bitcoinTransactionListener, priceService);
             netStatusReciever = trafficSignal.addNotifier(new TrafficSignalReciever() {
                 @Override
                 public void onStatusChanged(final SignalType signalType, final Status status) {
@@ -225,13 +242,13 @@ public class BitFluidsMainActivity extends Activity {
                         public void run() {
                             switch (signalType) { //switch is generally ugly, perhaps this should move into enum?
                                 case NETWORK:
-                                    NetStatus.setBackgroundColor(status.androidColor);
+                                    netStatus.setBackgroundColor(status.androidColor);
                                     break;
                                 case EXCHANGERATE:
-                                    ExchStatus.setBackgroundColor(status.androidColor);
+                                    exchStatus.setBackgroundColor(status.androidColor);
                                     break;
                                 case PEERS:
-                                    P2PStatus.setBackgroundColor(status.androidColor);
+                                    p2pStatus.setBackgroundColor(status.androidColor);
                                     break;
                                 default:
                                     throw new IllegalArgumentException("unexpected signal :" + signalType);
@@ -264,24 +281,28 @@ public class BitFluidsMainActivity extends Activity {
                 public void onFluidPaid(final TransactionItem transactionItem) {
                     runOnUiThread(new Runnable() {
                         @Override
-                            public void run() {
+                        public void run() {
                             state.getTransactionItems().add(transactionItem);
-                            list_view_array.notifyDataSetChanged();
+                            list_view_adapter.notifyDataSetChanged();
+                            String sentence = transactionItem.buildSentence();
+                            if (textToSpeech != null) {
+                                textToSpeech.speak(sentence, TextToSpeech.QUEUE_ADD, null);
                             }
-                        });
-                    }
+                        }
+                    });
+                }
 
-                    @Override
-                    public void onError(String message, FluidType type, Bitcoins bitcoins) {
-                        runOnUiThread(new Runnable() {
-                            @Override
-                            public void run() {
-                                state.getTransactionItems().add(new TransactionItem(null, null, Double.NaN, Double.NaN, Sha256Hash.ZERO_HASH));
-                                list_view_array.notifyDataSetChanged();
+                @Override
+                public void onError(String message, FluidType type, Bitcoins bitcoins) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            state.getTransactionItems().add(new TransactionItem(null, null, 0, Double.NaN, Sha256Hash.ZERO_HASH));
+                            list_view_adapter.notifyDataSetChanged();
 
-                            }
-                        });
-                    }
+                        }
+                    });
+                }
             });
             bitcoinTransactionListener.init(convert);
             final TextView TpsText = (TextView) findViewById(R.id.TPS);
@@ -317,6 +338,37 @@ public class BitFluidsMainActivity extends Activity {
 
             qr_alk.setOnClickListener(new QrClickListener(env.getKey200()));
             qr_nonalk.setOnClickListener(new QrClickListener(env.getKey150()));
+        }
+    }
+
+    private void checkForTTS() {
+        Intent checkIntent = new Intent();
+        checkIntent.setAction(TextToSpeech.Engine.ACTION_CHECK_TTS_DATA);
+        startActivityForResult(checkIntent, TTS_ACTION);
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        finish();
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == TTS_ACTION) {
+            if (resultCode == TextToSpeech.Engine.CHECK_VOICE_DATA_PASS) {
+                textToSpeech = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+                    @Override
+                    public void onInit(int i) {
+                        Log.i(TAG, "init of text-to-speech finished: " + i);
+                    }
+                });
+                textToSpeech.setLanguage(Locale.GERMAN);
+            } else {
+                Intent installTTSIntent = new Intent();
+                installTTSIntent.setAction(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA);
+                startActivity(installTTSIntent);
+            }
         }
     }
 

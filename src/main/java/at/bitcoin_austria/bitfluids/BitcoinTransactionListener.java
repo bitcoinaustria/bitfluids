@@ -16,6 +16,7 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import android.util.Log;
 import com.google.bitcoin.core.*;
 import com.google.bitcoin.discovery.PeerDiscovery;
 import com.google.bitcoin.store.BlockStore;
@@ -48,6 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BitcoinTransactionListener {
     private static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
     private static final int MILLIS_PER_MINUTE = 1000 * 60;
+    public static final int MAX_CONNECTIONS = 4;
     private final Environment env;
     private final List<Address> lookingFor;
     private final List<Consumer<Integer>> peerCountListeners;
@@ -60,7 +62,7 @@ public class BitcoinTransactionListener {
     private final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
     //we keep strong refs to these to surely not double-check
-    private final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
+    private final Set<Sha256Hash> interestingHashes = Collections.synchronizedSet(new HashSet<Sha256Hash>());
 
     private final TreeSet<Long> transactionTimes = new TreeSet<Long>();
     private final long startupTime;
@@ -103,6 +105,9 @@ public class BitcoinTransactionListener {
                 @Override
                 public Message onPreMessageReceived(Peer peer, Message m) {
                     if (m instanceof Block) {
+                        for (Transaction transaction : ((Block) m).getTransactions()) {
+                            processTransaction(transaction, txNotifier);
+                        }
                         return null;
                     }
                     return m;
@@ -135,6 +140,7 @@ public class BitcoinTransactionListener {
             }
             //in our case we are only interested in future transactions.
             peerGroup.setFastCatchupTimeSecs(new Date().getTime() / 1000);
+            peerGroup.setMaxConnections(MAX_CONNECTIONS);
             peerGroup.start();
         } catch (BlockStoreException e) {
             throw new RuntimeException(e);
@@ -145,7 +151,9 @@ public class BitcoinTransactionListener {
     private synchronized void processTransaction(Transaction t, TxNotifier txNotifier) {
         Sha256Hash transactionHash = t.getHash();
         //have seen it, but maybe already forgotten
-        if (isInteresting.get(transactionHash) != null) {
+        Boolean cached = isInteresting.get(transactionHash);
+        if (cached != null) {
+            Log.d("BF", " already seen:" + transactionHash);
             return;
         }
         //double-check maybe it was already collected and evicted from weakhashmap
@@ -223,7 +231,9 @@ public class BitcoinTransactionListener {
     }
 
     public void shutdown() {
-        peerGroup.stop();
+        if (peerGroup != null) {
+            peerGroup.stop();
+        }
         peerGroup = null;
     }
 

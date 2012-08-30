@@ -61,7 +61,7 @@ public class TrafficSignal {
             public void consume(Integer count) {
                 if (count < 1) {
                     trafficSignReciever.onStatusChanged(SignalType.PEERS, Status.RED);
-                } else if (count < 4) {
+                } else if (count < BitcoinTransactionListener.MAX_CONNECTIONS) {
                     trafficSignReciever.onStatusChanged(SignalType.PEERS, Status.YELLOW);
                 } else {
                     trafficSignReciever.onStatusChanged(SignalType.PEERS, Status.GREEN);

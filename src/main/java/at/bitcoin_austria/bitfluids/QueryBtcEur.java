@@ -31,6 +31,7 @@ import java.util.Date;
  * @author schilly
  */
 final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
+    public static final int SHOW_NUM_DIGITS = 3;
     private final TextView txt_view;
     private final BitFluidsMainActivity activity;
     private final PriceService priceService;
@@ -65,10 +66,10 @@ final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
         publishProgress("connecting …");
         try {
             Double btceur = priceService.getEurQuote();
-            Bitcoins price150 = Bitcoins.nearestValue(FluidType.COLA.getEuroPrice() / btceur);
-            Bitcoins price200 = Bitcoins.nearestValue(FluidType.MATE.getEuroPrice() / btceur);
+            Bitcoins price150 = roundedBitcoins(FluidType.COLA.getEuroPrice() / btceur);
+            Bitcoins price200 = roundedBitcoins(FluidType.MATE.getEuroPrice() / btceur);
             String uri150 = BitcoinURI.convertToBitcoinURI(env.getKey150(), price150.toBigInteger(), FluidType.COLA.getDescription(),null);
-            String uri200 = BitcoinURI.convertToBitcoinURI(env.getKey200(), price200.toBigInteger(), FluidType.COLA.getDescription(),null);
+            String uri200 = BitcoinURI.convertToBitcoinURI(env.getKey200(), price200.toBigInteger(), FluidType.MATE.getDescription(), null);
             Bitmap bitmap150 = Utils.getQRCodeBitmap(uri150, 512);
             Bitmap bitmap200 = Utils.getQRCodeBitmap(uri200, 512);
             return new Data(btceur,bitmap200,bitmap150, price150, price200);
@@ -76,6 +77,10 @@ final class QueryBtcEur extends AsyncTask<Void, String, QueryBtcEur.Data> {
             publishProgress("ERROR: " + remoteSystemFail.getMessage());
             return null;
         }
+    }
+
+    private Bitcoins roundedBitcoins(double colaprice) {
+        return Bitcoins.nearestValue(colaprice).roundToSignificantFigures(SHOW_NUM_DIGITS);
     }
 
     /**

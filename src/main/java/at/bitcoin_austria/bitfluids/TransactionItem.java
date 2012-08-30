@@ -26,12 +26,12 @@ import java.io.Serializable;
 public class TransactionItem implements Serializable {
 
     public final Bitcoins paid;
-    public final double count;
+    public final int count;
     public final double euroPerBitcoin;
     public FluidType fluidType;
     public Sha256Hash hash;
 
-    public TransactionItem(FluidType fluidType, Bitcoins paid, double count, double euroPerBitcoin, Sha256Hash hash) {
+    public TransactionItem(FluidType fluidType, Bitcoins paid, int count, double euroPerBitcoin, Sha256Hash hash) {
         this.fluidType = fluidType;
         this.paid = paid;
         this.count = count;
@@ -58,6 +58,18 @@ public class TransactionItem implements Serializable {
 
     @Override
     public String toString() {
-        return count + " Stück " + fluidType;
+        return count + " Stück " + fluidType + " tx " + hash.toString().substring(0, 4);
+    }
+
+    public String buildSentence() {
+        if (count == 0) {
+            return "Sie Geizkragen, das waren nur " + paid.toString() + " Bitcoins " + fluidType.getDescription() + " kostet mehr!";
+        }
+        String anzahl = count == 1 ? "ein" : String.valueOf(count);
+        return "Sie können nun "
+                + anzahl
+                + "  Stück "
+                + fluidType.getDescription()
+                + " aus dem Kühlschrank nehmen";
     }
 }

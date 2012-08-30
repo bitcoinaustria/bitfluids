@@ -18,6 +18,7 @@ package at.bitcoin_austria.bitfluids;
 
 import com.google.bitcoin.core.Address;
 import com.google.bitcoin.core.Sha256Hash;
+import com.google.common.base.Preconditions;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -50,7 +51,7 @@ public class Tx2FluidsAdapter {
         return new TxNotifier() {
             @Override
             public void onValue(Bitcoins bitcoins, Address key, Sha256Hash hash) {
-                FluidType type = lookup.get(key);
+                FluidType type = Preconditions.checkNotNull(lookup.get(key));
                 try {
                     double price = priceService.getEurQuote();
                     BigDecimal eurPerBitcoin = BigDecimal.valueOf(price);
@@ -59,11 +60,11 @@ public class Tx2FluidsAdapter {
                     BigDecimal anzahl = euros.divide(euroPrice, RoundingMode.HALF_UP);
                     BigDecimal rounded = BigDecimal.valueOf(anzahl.add(BigDecimal.valueOf(0.5)).longValue());
                     //is within 2% -> return rounded
-                    double difference = anzahl.subtract(rounded).divide(rounded, RoundingMode.HALF_UP).abs().doubleValue();
-                    if (difference < 0.02) {
+//                    double difference = anzahl.subtract(rounded).divide(rounded, RoundingMode.HALF_UP).abs().doubleValue();
+//                    if (difference < 0.02) {
                         anzahl = rounded;
-                    }
-                    fluidsNotifier.onFluidPaid(new TransactionItem(type,bitcoins, anzahl.doubleValue(),price,hash));
+//                    }
+                    fluidsNotifier.onFluidPaid(new TransactionItem(type,bitcoins, anzahl.intValue(),price,hash));
                 } catch (RemoteSystemFail remoteSystemFail) {
                     fluidsNotifier.onError(remoteSystemFail.getMessage(), type, bitcoins);
                 }
