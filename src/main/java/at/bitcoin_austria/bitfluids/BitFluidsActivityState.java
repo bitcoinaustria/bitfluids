@@ -17,19 +17,17 @@
 package at.bitcoin_austria.bitfluids;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
-/**
- * this <b>static</b> inner class stores the state, including the background
- * AsyncTask, for restoring when Activity restarts.
- *
- * @author schilly
- */
-class BitFluidsActivityState implements Serializable {
-    String txt_view_state;
-    Double btceur;
+public class BitFluidsActivityState implements Serializable {
+    List<TransactionItem> transactionItems = new ArrayList<TransactionItem>();
 
-    @Override
-    public String toString() {
-        return String.format("State: %f btc/eur", btceur);
+    public List<TransactionItem> getTransactionItems() {
+        return transactionItems;
+    }
+
+    public void addItem(TransactionItem transactionItem) {
+        transactionItems.add(transactionItem);
     }
 }

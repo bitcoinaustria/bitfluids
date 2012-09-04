@@ -16,10 +16,12 @@
 
 package at.bitcoin_austria.bitfluids;
 
+import android.util.Log;
 import com.google.bitcoin.core.*;
 import com.google.bitcoin.discovery.PeerDiscovery;
 import com.google.bitcoin.store.BlockStore;
 import com.google.bitcoin.store.BlockStoreException;
+import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,9 +46,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author apetersson
  */
-public class CasualListener {
+public class BitcoinTransactionListener {
     private static final long TIMEFRAME_MILLIS = 120 * 1000; //look at the last 2 minutes
     private static final int MILLIS_PER_MINUTE = 1000 * 60;
+    public static final int MAX_CONNECTIONS = 4;
     private final Environment env;
     private final List<Address> lookingFor;
     private final List<Consumer<Integer>> peerCountListeners;
@@ -54,18 +57,18 @@ public class CasualListener {
     //    private BlockChain chain;
     private PeerGroup peerGroup;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(CasualListener.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(BitcoinTransactionListener.class);
     //weakhashSet would be sufficient, but there is no such thing
     private final WeakHashMap<Sha256Hash, Boolean> isInteresting = new WeakHashMap<Sha256Hash, Boolean>();
 
     //we keep strong refs to these to surely not double-check
-    private final Set<Sha256Hash> interestingHashes = new HashSet<Sha256Hash>();
+    private final Set<Sha256Hash> interestingHashes = Collections.synchronizedSet(new HashSet<Sha256Hash>());
 
     private final TreeSet<Long> transactionTimes = new TreeSet<Long>();
     private final long startupTime;
     private Stats stats;
 
-    public CasualListener(Environment env) {
+    public BitcoinTransactionListener(Environment env) {
         peerCountListeners = new ArrayList<Consumer<Integer>>();
         this.env = env;
         lookingFor = Arrays.asList(env.getKey200(), env.getKey150());
@@ -83,7 +86,8 @@ public class CasualListener {
      * @param txNotifier callback when a new matching transaction occurs
      * @see #shutdown()
      */
-    public void addNotifier(final TxNotifier txNotifier) {
+    public void init(final TxNotifier txNotifier) {
+        Preconditions.checkState(peerGroup == null);
         final PeerEventListener txProcessListener = new AbstractPeerEventListener() {
             @Override
             public void onTransaction(Peer peer, Transaction t) {
@@ -101,6 +105,9 @@ public class CasualListener {
                 @Override
                 public Message onPreMessageReceived(Peer peer, Message m) {
                     if (m instanceof Block) {
+                        for (Transaction transaction : ((Block) m).getTransactions()) {
+                            processTransaction(transaction, txNotifier);
+                        }
                         return null;
                     }
                     return m;
@@ -133,6 +140,7 @@ public class CasualListener {
             }
             //in our case we are only interested in future transactions.
             peerGroup.setFastCatchupTimeSecs(new Date().getTime() / 1000);
+            peerGroup.setMaxConnections(MAX_CONNECTIONS);
             peerGroup.start();
         } catch (BlockStoreException e) {
             throw new RuntimeException(e);
@@ -143,7 +151,9 @@ public class CasualListener {
     private synchronized void processTransaction(Transaction t, TxNotifier txNotifier) {
         Sha256Hash transactionHash = t.getHash();
         //have seen it, but maybe already forgotten
-        if (isInteresting.get(transactionHash) != null) {
+        Boolean cached = isInteresting.get(transactionHash);
+        if (cached != null) {
+            Log.d("BF", " already seen:" + transactionHash);
             return;
         }
         //double-check maybe it was already collected and evicted from weakhashmap
@@ -192,7 +202,7 @@ public class CasualListener {
                             Bitcoins bitcoins = Bitcoins.valueOf(output);
                             LOGGER.debug("detected relevant transaction!" + bitcoins);
                             wasInteresting = true;
-                            txNotifier.onValue(bitcoins, address);
+                            txNotifier.onValue(bitcoins, address, t.getHash());
                         }
                     }
                 }
@@ -221,7 +231,16 @@ public class CasualListener {
     }
 
     public void shutdown() {
-        peerGroup.stop();
+        if (peerGroup != null) {
+            peerGroup.stop();
+        }
+        peerGroup = null;
+    }
+
+    public void addHashes(List<TransactionItem> transactionItems) {
+        for (TransactionItem item : transactionItems) {
+            interestingHashes.add(item.hash);
+        }
     }
 
     private static class DummyBlockStore implements BlockStore {

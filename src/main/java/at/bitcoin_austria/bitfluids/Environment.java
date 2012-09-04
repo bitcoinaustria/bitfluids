@@ -78,6 +78,10 @@ public enum Environment {
 
     private static final String MTGOX_200_EUR = "184bebdTa792ueyzQxUseXTpvAP5wXNTq1";
     private static final String MTGOX_150_EUR = "1JLMzJuRZGFm4hzNuWRREZFbE1LhJtvFk";
+
+//    private static final String MTGOX_200_EUR = "1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp";
+//    private static final String MTGOX_150_EUR = "1dice97ECuByXAvqXpaYzSaQuPVvrtmz6";
+
     private static final String APETERSSON_2_EUR_PUBKEY = "n4d5cP2u1cmBrYEnr7iWVMccnsWyzkLn3T";
     private static final String APETERSSON_1_50_PUBKEY = "mngpA1D7a2xD9M3KP9VjjNrryNp9bWERGA";
 

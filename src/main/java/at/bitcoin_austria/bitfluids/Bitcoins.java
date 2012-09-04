@@ -19,6 +19,7 @@ package at.bitcoin_austria.bitfluids;
 import com.google.bitcoin.core.TransactionOutput;
 import com.google.common.base.Preconditions;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 
@@ -28,7 +29,7 @@ import java.math.BigInteger;
  *
  * @author apetersson
  */
-public final class Bitcoins {
+public final class Bitcoins implements Serializable {
     /**
      * 100 000 000   must be long, else MAX_VALUE will overflow
      */
@@ -64,7 +65,7 @@ public final class Bitcoins {
         return new Bitcoins(Math.round(v * SATOSHIS_PER_BITCOIN));
     }
 
-    private static Bitcoins valueOf(long satoshis) {
+    public static Bitcoins valueOf(long satoshis) {
         return new Bitcoins(satoshis);
     }
 
@@ -124,4 +125,22 @@ public final class Bitcoins {
     public String toCurrencyString() {
         return toString() + " " + BITCOIN_SYMBOL;
     }
+
+    public Bitcoins roundToSignificantFigures(int n) {
+        return Bitcoins.valueOf(roundToSignificantFigures(satoshis,n));
+    }
+
+    private static long roundToSignificantFigures(long num, int n) {     //todo optimize for long
+        if(num == 0) {
+            return 0;
+        }
+        final double d = Math.ceil(Math.log10(num < 0 ? -num: num));
+        final int power = n - (int) d;
+
+        final double magnitude = Math.pow(10, power);
+        final long shifted = Math.round(num*magnitude);
+        long ret = (long) (shifted / magnitude);
+        return ret;
+    }
+
 }
