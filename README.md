@@ -4,7 +4,7 @@ What you might need
 ---------------------------
 * maven3
 * android sdk 2.2 (because of the tablet we use)
-* eclipse indigio 3.7.2
+* eclipse indigo 3.7.2
 * ADT plugin
 * mvn plugin
 * git (obviously)
